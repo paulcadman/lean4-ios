@@ -14,7 +14,9 @@ This app demonstrates a Lean program that uses SDL to make an SDL app with anima
 make -C example-sdl-app run-sim-app
 ```
 
-![Video of the bouncing square app](assets/bouncing_square.gif)
+This is the SDL app running in an iOS simulator:
+
+https://github.com/user-attachments/assets/26bd2bf7-4edc-4bfc-9701-bbced9e6c94c
 
 ## A minimal example iOS app
 

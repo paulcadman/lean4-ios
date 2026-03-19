@@ -1,0 +1,9 @@
+name = "example_app"
+version = "0.1.0"
+defaultTargets = ["ExampleApp"]
+
+[[lean_lib]]
+name = "ExampleApp"
+srcDir = "lean"
+roots = ["Example", "ExampleBase"]
+defaultFacets = ["static"]

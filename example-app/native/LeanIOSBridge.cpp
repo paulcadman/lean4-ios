@@ -10,7 +10,7 @@
 #include "LeanIOSBridge.h"
 
 extern "C" {
-    lean_object * initialize_Example(uint8_t builtin);
+    lean_object * initialize_example__app_Example(uint8_t builtin);
     uint32_t addOne(uint32_t n);
 
     uint32_t lean_ios_add_one(uint32_t n) {
@@ -26,7 +26,7 @@ extern "C" {
         lean::initialize_thread();
 
         if (!module_initialized) {
-            lean_object * init = initialize_Example(1);
+            lean_object * init = initialize_example__app_Example(1);
             if (lean_io_result_is_error(init)) {
                 lean_dec_ref(init);
                 return 0;

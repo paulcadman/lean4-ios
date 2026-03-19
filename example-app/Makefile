@@ -20,48 +20,34 @@ SIMULATOR_SDK_PATH := $(shell xcrun --sdk $(SIMULATOR_SDK) --show-sdk-path)
 APP_LEAN_DIR := lean
 APP_NATIVE_DIR := native
 APP_BUILD_DIR := $(BUILD_DIR)/ios-sim-app
-APP_GEN_DIR := $(APP_BUILD_DIR)/generated
 APP_OBJ_DIR := $(APP_BUILD_DIR)/obj
 APP_MODULE_CACHE_DIR := $(APP_BUILD_DIR)/module-cache
 APP_DIR := $(APP_BUILD_DIR)/LeanIOSExample.app
 APP_BIN := $(APP_DIR)/LeanIOSExample
 APP_INFO_PLIST := $(APP_DIR)/Info.plist
-APP_MODULE_NAME := Example
-APP_MODULE := $(APP_LEAN_DIR)/$(APP_MODULE_NAME).lean
-APP_MODULE_C := $(APP_GEN_DIR)/$(APP_MODULE_NAME).c
-APP_MODULE_OLEAN := $(APP_GEN_DIR)/$(APP_MODULE_NAME).olean
-APP_MODULE_ILEAN := $(APP_GEN_DIR)/$(APP_MODULE_NAME).ilean
-APP_MODULE_OBJ := $(APP_OBJ_DIR)/$(APP_MODULE_NAME).o
+APP_LIB_TARGET := ExampleApp:static
+APP_LAKE_BUILD_DIR := .lake/build
 APP_BRIDGE_SRC := $(APP_NATIVE_DIR)/LeanIOSBridge.cpp
 APP_BRIDGE_HEADER := $(APP_NATIVE_DIR)/LeanIOSBridge.h
 APP_BRIDGE_OBJ := $(APP_OBJ_DIR)/LeanIOSBridge.o
 APP_MAIN_SRC := $(APP_NATIVE_DIR)/App/main.swift
 APP_INFO_PLIST_SRC := $(APP_NATIVE_DIR)/App/Info.plist
 
-.PHONY: sim-runtime sim-app run-sim-app clean
+.PHONY: sim-runtime app-lib sim-app run-sim-app clean
 
 sim-runtime:
 	$(MAKE) -C $(ROOT_DIR) IOS_SDK="$(SIMULATOR_SDK)" IOS_TARGET="$(SIMULATOR_TARGET)" IOS_DEPLOYMENT_TARGET="$(IOS_DEPLOYMENT_TARGET)" runtime stdlib-init
 
-$(APP_MODULE_C): $(APP_MODULE)
-	mkdir -p $(APP_GEN_DIR)
-	lean -R $(APP_LEAN_DIR) \
-	  -o $(APP_MODULE_OLEAN) \
-	  -i $(APP_MODULE_ILEAN) \
-	  -c $(APP_MODULE_C) \
-	  $(APP_MODULE)
-
-$(APP_MODULE_OBJ): $(APP_MODULE_C)
-	mkdir -p $(APP_OBJ_DIR)
-	xcrun --sdk $(SIMULATOR_SDK) clang \
-	  -target $(SIMULATOR_TARGET) \
-	  -isysroot $(SIMULATOR_SDK_PATH) \
-	  -mios-simulator-version-min=$(IOS_DEPLOYMENT_TARGET) \
-	  -I$(SIM_RUNTIME_BUILD_DIR)/include \
-	  -I$(LEAN_SRC_DIR)/stage0/src/include \
-	  -I$(LEAN_SRC_DIR)/src/include \
-	  -c $(APP_MODULE_C) \
-	  -o $(APP_MODULE_OBJ)
+app-lib: sim-runtime
+	LEAN_CC="$(abspath $(ROOT_DIR)/scripts/ios-leanc.sh)" \
+	LEAN_AR="$(abspath $(ROOT_DIR)/scripts/ios-ar.sh)" \
+	IOS_SDK="$(SIMULATOR_SDK)" \
+	IOS_TARGET="$(SIMULATOR_TARGET)" \
+	IOS_DEPLOYMENT_TARGET="$(IOS_DEPLOYMENT_TARGET)" \
+	LEAN_RUNTIME_INCLUDE="$(abspath $(SIM_RUNTIME_BUILD_DIR))/include" \
+	LEAN_STAGE0_INCLUDE="$(abspath $(LEAN_SRC_DIR))/stage0/src/include" \
+	LEAN_SRC_INCLUDE="$(abspath $(LEAN_SRC_DIR))/src/include" \
+	lake build $(APP_LIB_TARGET)
 
 $(APP_BRIDGE_OBJ): $(APP_BRIDGE_SRC) $(APP_BRIDGE_HEADER)
 	mkdir -p $(APP_OBJ_DIR)
@@ -77,8 +63,9 @@ $(APP_BRIDGE_OBJ): $(APP_BRIDGE_SRC) $(APP_BRIDGE_HEADER)
 	  -c $(APP_BRIDGE_SRC) \
 	  -o $(APP_BRIDGE_OBJ)
 
-$(APP_BIN): sim-runtime $(APP_MODULE_OBJ) $(APP_BRIDGE_OBJ) $(APP_MAIN_SRC)
+$(APP_BIN): app-lib $(APP_BRIDGE_OBJ) $(APP_MAIN_SRC)
 	mkdir -p $(APP_DIR) $(APP_MODULE_CACHE_DIR)
+	APP_LIB_PATH="$$(lake query $(APP_LIB_TARGET))"; \
 	xcrun --sdk $(SIMULATOR_SDK) swiftc \
 	  -parse-as-library \
 	  -target $(SIMULATOR_TARGET) \
@@ -86,7 +73,7 @@ $(APP_BIN): sim-runtime $(APP_MODULE_OBJ) $(APP_BRIDGE_OBJ) $(APP_MAIN_SRC)
 	  -module-cache-path $(APP_MODULE_CACHE_DIR) \
 	  -import-objc-header $(APP_BRIDGE_HEADER) \
 	  $(APP_MAIN_SRC) \
-	  $(APP_MODULE_OBJ) \
+	  "$$APP_LIB_PATH" \
 	  $(APP_BRIDGE_OBJ) \
 	  $(SIM_STDLIB_INIT_LIB) \
 	  $(SIM_RUNTIME_LIB) \
@@ -111,4 +98,4 @@ run-sim-app: sim-app
 	xcrun simctl launch booted $(APP_BUNDLE_ID)
 
 clean:
-	rm -rf $(APP_BUILD_DIR)
+	rm -rf $(APP_BUILD_DIR) $(APP_LAKE_BUILD_DIR)

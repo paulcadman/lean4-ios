@@ -1,3 +1,5 @@
+import ExampleBase
+
 @[export addOne]
 def addOne (n : UInt32) : UInt32 :=
-  n + 1
+  ExampleBase.increment n

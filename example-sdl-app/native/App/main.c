@@ -9,7 +9,7 @@
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     (void)argc;
     (void)argv;
-    if (!lean_runtime_initialize_modules(lean_sdl_app_modules, lean_sdl_app_module_count)) {
+    if (!lean_runtime_initialize_modules(lean_sdl_app_root_modules, lean_sdl_app_root_module_count)) {
         return SDL_APP_FAILURE;
     }
     if (!lean_sdl_app_init()) {

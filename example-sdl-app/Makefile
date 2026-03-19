@@ -1,7 +1,6 @@
 .DEFAULT_GOAL := sim-app
 
 ROOT_DIR := ..
-CORE_MAKE := $(ROOT_DIR)/Makefile
 
 LEAN_SRC_DIR := $(ROOT_DIR)/lean4
 SIMULATOR_SDK ?= iphonesimulator
@@ -28,24 +27,16 @@ SDL_DEVICE_ARCHIVE := $(SDL_BUILD_DIR)/SDL3-iphoneos.xcarchive
 SDL_XCFRAMEWORK := $(SDL_BUILD_DIR)/SDL3.xcframework
 SDL_XCFRAMEWORK_INFO := $(SDL_XCFRAMEWORK)/Info.plist
 SDL_SIM_FRAMEWORK := $(SDL_XCFRAMEWORK)/ios-arm64_x86_64-simulator/SDL3.framework
-SDL_SIM_HEADERS_DIR := $(SDL_SIM_FRAMEWORK)/Headers
 
-APP_LEAN_DIR := lean
 APP_NATIVE_DIR := native
 APP_BUILD_DIR := $(BUILD_DIR)/ios-sdl-sim-app
-APP_GEN_DIR := $(APP_BUILD_DIR)/generated
 APP_OBJ_DIR := $(APP_BUILD_DIR)/obj
 APP_DIR := $(APP_BUILD_DIR)/LeanSDLExample.app
 APP_BIN := $(APP_DIR)/LeanSDLExample
 APP_INFO_PLIST := $(APP_DIR)/Info.plist
 APP_FRAMEWORKS_DIR := $(APP_DIR)/Frameworks
 APP_SDL_FRAMEWORK := $(APP_FRAMEWORKS_DIR)/SDL3.framework
-APP_MODULE_NAME := ExampleSDL
-APP_MODULE := $(APP_LEAN_DIR)/$(APP_MODULE_NAME).lean
-APP_MODULE_C := $(APP_GEN_DIR)/$(APP_MODULE_NAME).c
-APP_MODULE_OLEAN := $(APP_GEN_DIR)/$(APP_MODULE_NAME).olean
-APP_MODULE_ILEAN := $(APP_GEN_DIR)/$(APP_MODULE_NAME).ilean
-APP_MODULE_OBJ := $(APP_OBJ_DIR)/$(APP_MODULE_NAME).o
+APP_LIB_TARGET := ExampleSDLApp:static
 APP_BINDINGS_SRC := $(APP_NATIVE_DIR)/LeanSDLBindings.c
 APP_BINDINGS_HEADER := $(APP_NATIVE_DIR)/LeanSDLBindings.h
 APP_BINDINGS_OBJ := $(APP_OBJ_DIR)/LeanSDLBindings.o
@@ -62,7 +53,7 @@ APP_MAIN_SRC := $(APP_NATIVE_DIR)/App/main.c
 APP_MAIN_OBJ := $(APP_OBJ_DIR)/main.o
 APP_INFO_PLIST_SRC := $(APP_NATIVE_DIR)/App/Info.plist
 
-.PHONY: sim-runtime sdl3-xcframework sim-app run-sim-app clean
+.PHONY: sim-runtime sdl3-xcframework app-lib sim-app run-sim-app clean
 
 sim-runtime:
 	$(MAKE) -C $(ROOT_DIR) IOS_SDK="$(SIMULATOR_SDK)" IOS_TARGET="$(SIMULATOR_TARGET)" IOS_DEPLOYMENT_TARGET="$(IOS_DEPLOYMENT_TARGET)" runtime stdlib-init
@@ -97,26 +88,16 @@ $(SDL_XCFRAMEWORK_INFO):
 
 sdl3-xcframework: $(SDL_XCFRAMEWORK_INFO)
 
-$(APP_MODULE_C): $(APP_MODULE)
-	mkdir -p $(APP_GEN_DIR)
-	lean -R $(APP_LEAN_DIR) \
-	  -o $(APP_MODULE_OLEAN) \
-	  -i $(APP_MODULE_ILEAN) \
-	  -c $(APP_MODULE_C) \
-	  $(APP_MODULE)
-
-$(APP_MODULE_OBJ): $(APP_MODULE_C)
-	mkdir -p $(APP_OBJ_DIR)
-	xcrun --sdk $(SIMULATOR_SDK) clang \
-	  -target $(SIMULATOR_TARGET) \
-	  -isysroot $(SIMULATOR_SDK_PATH) \
-	  -mios-simulator-version-min=$(IOS_DEPLOYMENT_TARGET) \
-	  -I$(SIM_RUNTIME_BUILD_DIR)/include \
-	  -I$(LEAN_SRC_DIR)/stage0/src/include \
-	  -I$(LEAN_SRC_DIR)/src/include \
-	  -I$(SDL_SIM_HEADERS_DIR) \
-	  -c $(APP_MODULE_C) \
-	  -o $(APP_MODULE_OBJ)
+app-lib: sim-runtime
+	LEAN_CC="$(abspath $(ROOT_DIR)/scripts/ios-leanc.sh)" \
+	LEAN_AR="$(abspath $(ROOT_DIR)/scripts/ios-ar.sh)" \
+	IOS_SDK="$(SIMULATOR_SDK)" \
+	IOS_TARGET="$(SIMULATOR_TARGET)" \
+	IOS_DEPLOYMENT_TARGET="$(IOS_DEPLOYMENT_TARGET)" \
+	LEAN_RUNTIME_INCLUDE="$(abspath $(SIM_RUNTIME_BUILD_DIR))/include" \
+	LEAN_STAGE0_INCLUDE="$(abspath $(LEAN_SRC_DIR))/stage0/src/include" \
+	LEAN_SRC_INCLUDE="$(abspath $(LEAN_SRC_DIR))/src/include" \
+	lake build $(APP_LIB_TARGET)
 
 $(APP_BINDINGS_OBJ): $(APP_BINDINGS_SRC) $(APP_BINDINGS_HEADER) $(SDL_XCFRAMEWORK_INFO)
 	mkdir -p $(APP_OBJ_DIR)
@@ -189,15 +170,16 @@ $(APP_SDL_FRAMEWORK): $(SDL_XCFRAMEWORK_INFO)
 	rm -rf $(APP_SDL_FRAMEWORK)
 	cp -R $(SDL_SIM_FRAMEWORK) $(APP_SDL_FRAMEWORK)
 
-$(APP_BIN): sim-runtime $(SDL_XCFRAMEWORK_INFO) $(APP_MODULE_OBJ) $(APP_BINDINGS_OBJ) $(APP_RUNTIME_BRIDGE_OBJ) $(APP_BRIDGE_OBJ) $(APP_REGISTRATION_OBJ) $(APP_MAIN_OBJ)
+$(APP_BIN): app-lib $(SDL_XCFRAMEWORK_INFO) $(APP_BINDINGS_OBJ) $(APP_RUNTIME_BRIDGE_OBJ) $(APP_BRIDGE_OBJ) $(APP_REGISTRATION_OBJ) $(APP_MAIN_OBJ)
 	mkdir -p $(APP_DIR)
+	APP_LIB_PATH="$$(lake query $(APP_LIB_TARGET))"; \
 	xcrun --sdk $(SIMULATOR_SDK) clang++ \
 	  -target $(SIMULATOR_TARGET) \
 	  -isysroot $(SIMULATOR_SDK_PATH) \
 	  -mios-simulator-version-min=$(IOS_DEPLOYMENT_TARGET) \
 	  -F$(dir $(SDL_SIM_FRAMEWORK)) \
 	  $(APP_MAIN_OBJ) \
-	  $(APP_MODULE_OBJ) \
+	  "$$APP_LIB_PATH" \
 	  $(APP_BINDINGS_OBJ) \
 	  $(APP_RUNTIME_BRIDGE_OBJ) \
 	  $(APP_BRIDGE_OBJ) \

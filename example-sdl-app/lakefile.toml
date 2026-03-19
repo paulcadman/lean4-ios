@@ -1,0 +1,9 @@
+name = "example_sdl_app"
+version = "0.1.0"
+defaultTargets = ["ExampleSDLApp"]
+
+[[lean_lib]]
+name = "ExampleSDLApp"
+srcDir = "lean"
+roots = ["ExampleSDL", "SDLBindings"]
+defaultFacets = ["static"]

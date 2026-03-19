@@ -7,8 +7,8 @@
 extern "C" {
 #endif
 
-extern const lean_module_initializer_fn lean_sdl_app_modules[];
-extern const size_t lean_sdl_app_module_count;
+extern const lean_module_initializer_fn lean_sdl_app_root_modules[];
+extern const size_t lean_sdl_app_root_module_count;
 
 #ifdef __cplusplus
 }

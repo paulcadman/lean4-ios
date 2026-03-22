@@ -48,6 +48,13 @@ lean_sdl_setup_fullscreen_window_and_renderer(b_lean_obj_arg title) {
     g_window = NULL;
     return lean_sdl_error(SDL_GetError());
   }
+  if (!SDL_SetRenderVSync(g_renderer, 1)) {
+    SDL_DestroyRenderer(g_renderer);
+    g_renderer = NULL;
+    SDL_DestroyWindow(g_window);
+    g_window = NULL;
+    return lean_sdl_error(SDL_GetError());
+  }
 
   if (!SDL_GetWindowSize(g_window, &point_width, &point_height)) {
     return lean_sdl_error(SDL_GetError());

@@ -52,6 +52,8 @@ APP_REGISTRATION_OBJ := $(APP_OBJ_DIR)/LeanSDLModuleRegistration.o
 APP_MAIN_SRC := $(APP_NATIVE_DIR)/App/main.c
 APP_MAIN_OBJ := $(APP_OBJ_DIR)/main.o
 APP_INFO_PLIST_SRC := $(APP_NATIVE_DIR)/App/Info.plist
+APP_LAUNCH_STORYBOARD_SRC := $(APP_NATIVE_DIR)/App/LaunchScreen.storyboard
+APP_LAUNCH_STORYBOARD_DEST := $(APP_DIR)/LaunchScreen.storyboard
 
 .PHONY: sim-runtime sdl3-xcframework app-lib sim-app run-sim-app clean
 

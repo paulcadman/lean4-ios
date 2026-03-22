@@ -6,6 +6,7 @@ APP_BUILD_DIR ?= $(ROOT_DIR)/build/ios-sdl-device-app
 SDL_FRAMEWORK_SOURCE ?= $(ROOT_DIR)/build/sdl3/SDL3.xcframework/ios-arm64/SDL3.framework
 APP_MIN_VERSION_FLAG ?= -miphoneos-version-min=$(IOS_DEPLOYMENT_TARGET)
 SDL_APP_BUNDLE_ID ?= dev.paulcadman.LeanSDLExample
+RESVG_CARGO_TARGET ?= aarch64-apple-ios
 DEVICE_ID ?=
 DEVICE_CODESIGN_IDENTITY ?=
 DEVICE_PROVISION_PROFILE ?=

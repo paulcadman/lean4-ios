@@ -9,6 +9,7 @@ SDL_FRAMEWORK_SOURCE ?= $(ROOT_DIR)/build/sdl3/SDL3.xcframework/ios-arm64_x86_64
 APP_MIN_VERSION_FLAG ?= -mios-simulator-version-min=$(IOS_DEPLOYMENT_TARGET)
 SIMULATOR_DEVICE ?= iPhone 16
 SDL_APP_BUNDLE_ID ?= dev.paulcadman.LeanSDLExample
+RESVG_CARGO_TARGET ?= aarch64-apple-ios-sim
 
 include Makefile.common
 

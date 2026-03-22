@@ -20,6 +20,13 @@ SDL_DEVICE_ARCHIVE := $(SDL_BUILD_DIR)/SDL3-iphoneos.xcarchive
 SDL_XCFRAMEWORK := $(SDL_BUILD_DIR)/SDL3.xcframework
 SDL_XCFRAMEWORK_INFO := $(SDL_XCFRAMEWORK)/Info.plist
 
+RESVG_DIR := $(ROOT_DIR)/third-party/resvg
+RESVG_CAPI_MANIFEST := $(RESVG_DIR)/crates/c-api/Cargo.toml
+RESVG_INCLUDE_DIR := $(RESVG_DIR)/crates/c-api
+RESVG_TARGET_DIR := $(BUILD_DIR)/resvg-target
+RESVG_CARGO_TARGET ?= aarch64-apple-ios-sim
+RESVG_LIB := $(RESVG_TARGET_DIR)/$(RESVG_CARGO_TARGET)/release/libresvg.a
+
 APP_NATIVE_DIR := native
 APP_OBJ_DIR := $(APP_BUILD_DIR)/obj
 APP_DIR := $(APP_BUILD_DIR)/LeanSDLExample.app
@@ -84,6 +91,12 @@ $(SDL_XCFRAMEWORK_INFO):
 
 sdl3-xcframework: $(SDL_XCFRAMEWORK_INFO)
 
+$(RESVG_LIB):
+	CARGO_TARGET_DIR="$(abspath $(RESVG_TARGET_DIR))" \
+	cargo build --manifest-path $(RESVG_CAPI_MANIFEST) --release --target $(RESVG_CARGO_TARGET) --no-default-features
+
+resvg-lib: $(RESVG_LIB)
+
 app-lib: runtime
 	LEAN_CC="$(abspath $(ROOT_DIR)/scripts/ios-leanc.sh)" \
 	LEAN_AR="$(abspath $(ROOT_DIR)/scripts/ios-ar.sh)" \
@@ -106,7 +119,7 @@ app-lib: runtime
 	mkdir -p $(APP_BUILD_DIR)
 	cp "$$(lake query $(APP_LIB_TARGET))" $(APP_STATIC_LIB)
 
-$(APP_BINDINGS_OBJ): $(APP_BINDINGS_SRC) $(APP_BINDINGS_HEADER) $(SDL_XCFRAMEWORK_INFO)
+$(APP_BINDINGS_OBJ): $(APP_BINDINGS_SRC) $(APP_BINDINGS_HEADER) $(SDL_XCFRAMEWORK_INFO) $(RESVG_LIB)
 	mkdir -p $(APP_OBJ_DIR)
 	xcrun --sdk $(IOS_SDK) clang \
 	  -target $(IOS_TARGET) \
@@ -115,6 +128,7 @@ $(APP_BINDINGS_OBJ): $(APP_BINDINGS_SRC) $(APP_BINDINGS_HEADER) $(SDL_XCFRAMEWOR
 	  -I$(RUNTIME_BUILD_DIR)/include \
 	  -I$(LEAN_SRC_DIR)/stage0/src/include \
 	  -I$(LEAN_SRC_DIR)/src/include \
+		-I$(RESVG_INCLUDE_DIR) \
 	  -F$(dir $(SDL_FRAMEWORK_SOURCE)) \
 	  $(APP_PROJECT_CFLAGS) \
 	  -c $(APP_BINDINGS_SRC) \
@@ -182,7 +196,7 @@ $(APP_SDL_FRAMEWORK): $(SDL_XCFRAMEWORK_INFO)
 	rm -rf $(APP_SDL_FRAMEWORK)
 	cp -R $(SDL_FRAMEWORK_SOURCE) $(APP_SDL_FRAMEWORK)
 
-$(APP_BIN): app-lib $(APP_STATIC_LIB) $(SDL_XCFRAMEWORK_INFO) $(APP_BINDINGS_OBJ) $(APP_RUNTIME_BRIDGE_OBJ) $(APP_BRIDGE_OBJ) $(APP_REGISTRATION_OBJ) $(APP_MAIN_OBJ)
+$(APP_BIN): app-lib $(APP_STATIC_LIB) $(SDL_XCFRAMEWORK_INFO) $(RESVG_LIB) $(APP_BINDINGS_OBJ) $(APP_RUNTIME_BRIDGE_OBJ) $(APP_BRIDGE_OBJ) $(APP_REGISTRATION_OBJ) $(APP_MAIN_OBJ)
 	mkdir -p $(APP_DIR)
 	xcrun --sdk $(IOS_SDK) clang++ \
 	  -target $(IOS_TARGET) \
@@ -195,6 +209,7 @@ $(APP_BIN): app-lib $(APP_STATIC_LIB) $(SDL_XCFRAMEWORK_INFO) $(APP_BINDINGS_OBJ
 	  $(APP_RUNTIME_BRIDGE_OBJ) \
 	  $(APP_BRIDGE_OBJ) \
 	  $(APP_REGISTRATION_OBJ) \
+		$(RESVG_LIB) \
 	  $(STDLIB_INIT_LIB) \
 	  $(RUNTIME_LIB) \
 	  -framework SDL3 \

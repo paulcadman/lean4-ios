@@ -16,7 +16,7 @@ make -C example-sdl-app run-sim-app
 
 This is the SDL app running in an iOS simulator:
 
-https://github.com/user-attachments/assets/26bd2bf7-4edc-4bfc-9701-bbced9e6c94c
+https://github.com/user-attachments/assets/aa9b99ea-b496-4393-a35a-fe3d0679409e
 
 ## A minimal example iOS app
 

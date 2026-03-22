@@ -48,4 +48,4 @@ The build works as follows:
 - `make -C example-app sim-app` - builds example-app for iOS simulator
 - `make -C example-app run-sim-app` - starts a simulator, deploys / runs the iOS example app
 - `make -C example-sdl-app sim-app` - build the example-sdl-app for iOS simulator 
-- `make -C example-sdl-app sim-app` - starts a simulator, deploys / runs the iOS example SDL app
+- `make -C example-sdl-app run-sim-app` - starts a simulator, deploys / runs the iOS example SDL app

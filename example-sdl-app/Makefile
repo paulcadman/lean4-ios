@@ -55,6 +55,8 @@ APP_INFO_PLIST_SRC := $(APP_NATIVE_DIR)/App/Info.plist
 APP_LAUNCH_STORYBOARD_SRC := $(APP_NATIVE_DIR)/App/LaunchScreen.storyboard
 APP_LAUNCH_STORYBOARD_DEST := $(APP_DIR)/LaunchScreen.storyboard
 
+APP_PROJECT_CFLAGS := -Wall -Werror
+
 .PHONY: sim-runtime sdl3-xcframework app-lib sim-app run-sim-app clean
 
 sim-runtime:
@@ -111,6 +113,7 @@ $(APP_BINDINGS_OBJ): $(APP_BINDINGS_SRC) $(APP_BINDINGS_HEADER) $(SDL_XCFRAMEWOR
 	  -I$(LEAN_SRC_DIR)/stage0/src/include \
 	  -I$(LEAN_SRC_DIR)/src/include \
 	  -F$(dir $(SDL_SIM_FRAMEWORK)) \
+	  $(APP_PROJECT_CFLAGS) \
 	  -c $(APP_BINDINGS_SRC) \
 	  -o $(APP_BINDINGS_OBJ)
 
@@ -124,6 +127,7 @@ $(APP_RUNTIME_BRIDGE_OBJ): $(APP_RUNTIME_BRIDGE_SRC) $(APP_RUNTIME_BRIDGE_HEADER
 	  -I$(LEAN_SRC_DIR)/stage0/src/include \
 	  -I$(LEAN_SRC_DIR)/src/include \
 	  -I$(APP_NATIVE_DIR) \
+	  $(APP_PROJECT_CFLAGS) \
 	  -c $(APP_RUNTIME_BRIDGE_SRC) \
 	  -o $(APP_RUNTIME_BRIDGE_OBJ)
 
@@ -137,6 +141,7 @@ $(APP_BRIDGE_OBJ): $(APP_BRIDGE_SRC) $(APP_BRIDGE_HEADER) $(APP_RUNTIME_BRIDGE_H
 	  -I$(LEAN_SRC_DIR)/stage0/src/include \
 	  -I$(LEAN_SRC_DIR)/src/include \
 	  -I$(APP_NATIVE_DIR) \
+	  $(APP_PROJECT_CFLAGS) \
 	  -c $(APP_BRIDGE_SRC) \
 	  -o $(APP_BRIDGE_OBJ)
 
@@ -150,6 +155,7 @@ $(APP_REGISTRATION_OBJ): $(APP_REGISTRATION_SRC) $(APP_REGISTRATION_HEADER) $(AP
 	  -I$(LEAN_SRC_DIR)/stage0/src/include \
 	  -I$(LEAN_SRC_DIR)/src/include \
 	  -I$(APP_NATIVE_DIR) \
+	  $(APP_PROJECT_CFLAGS) \
 	  -c $(APP_REGISTRATION_SRC) \
 	  -o $(APP_REGISTRATION_OBJ)
 
@@ -164,6 +170,7 @@ $(APP_MAIN_OBJ): $(APP_MAIN_SRC) $(SDL_XCFRAMEWORK_INFO) $(APP_REGISTRATION_HEAD
 	  -I$(LEAN_SRC_DIR)/src/include \
 	  -I$(APP_NATIVE_DIR) \
 	  -F$(dir $(SDL_SIM_FRAMEWORK)) \
+	  $(APP_PROJECT_CFLAGS) \
 	  -c $(APP_MAIN_SRC) \
 	  -o $(APP_MAIN_OBJ)
 
@@ -198,7 +205,11 @@ $(APP_INFO_PLIST): $(APP_INFO_PLIST_SRC)
 	mkdir -p $(APP_DIR)
 	cp $(APP_INFO_PLIST_SRC) $(APP_INFO_PLIST)
 
-sim-app: $(APP_BIN) $(APP_INFO_PLIST) $(APP_SDL_FRAMEWORK)
+$(APP_LAUNCH_STORYBOARD_DEST): $(APP_LAUNCH_STORYBOARD_SRC)
+	mkdir -p $(APP_DIR)
+	cp $(APP_LAUNCH_STORYBOARD_SRC) $(APP_LAUNCH_STORYBOARD_DEST)
+
+sim-app: $(APP_BIN) $(APP_INFO_PLIST) $(APP_LAUNCH_STORYBOARD_DEST) $(APP_SDL_FRAMEWORK)
 
 run-sim-app: sim-app
 	if ! xcrun simctl list devices booted | grep -q "Booted"; then \

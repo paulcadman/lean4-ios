@@ -6,8 +6,8 @@
 
 extern lean_object * LEAN_APP_ROOT_MODULE(uint8_t builtin);
 
-void lean_initialize_runtime_module(void);
-void lean_initialize_thread(void);
+extern void lean_initialize_runtime_module(void);
+extern void lean_initialize_thread(void);
 
 bool lean_runtime_initialize_root_module(void) {
     static bool runtime_initialized = false;

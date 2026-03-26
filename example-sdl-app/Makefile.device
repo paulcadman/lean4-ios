@@ -2,8 +2,9 @@ ROOT_DIR ?= ..
 IOS_DEPLOYMENT_TARGET ?= 16.0
 IOS_SDK ?= iphoneos
 IOS_TARGET ?= arm64-apple-ios$(IOS_DEPLOYMENT_TARGET)
-APP_BUILD_DIR ?= $(ROOT_DIR)/build/ios-sdl-device-app
+APP_BUILD_DIR ?= $(ROOT_DIR)/build/example-sdl-app-device
 SDL_FRAMEWORK_SOURCE ?= $(ROOT_DIR)/build/sdl3/SDL3.xcframework/ios-arm64/SDL3.framework
+SDL_TTF_FRAMEWORK_SOURCE ?= $(ROOT_DIR)/build/sdl3_ttf/SDL3_ttf.xcframework/ios-arm64/SDL3_ttf.framework
 APP_MIN_VERSION_FLAG ?= -miphoneos-version-min=$(IOS_DEPLOYMENT_TARGET)
 SDL_APP_BUNDLE_ID ?= dev.paulcadman.LeanSDLExample
 RESVG_CARGO_TARGET ?= aarch64-apple-ios
@@ -37,9 +38,10 @@ run-device-app: device-app
 	fi
 	cp "$(DEVICE_PROVISION_PROFILE)" $(APP_DIR)/embedded.mobileprovision
 	codesign --force --sign "$(DEVICE_CODESIGN_IDENTITY)" $(DEVICE_CODESIGN_FLAGS) $(APP_SDL_FRAMEWORK)
+	codesign --force --sign "$(DEVICE_CODESIGN_IDENTITY)" $(DEVICE_CODESIGN_FLAGS) $(APP_SDL_TTF_FRAMEWORK)
 	codesign --force --sign "$(DEVICE_CODESIGN_IDENTITY)" $(DEVICE_CODESIGN_FLAGS) --entitlements $(APP_ENTITLEMENTS) $(APP_DIR)
 	xcrun devicectl device install app --device "$(DEVICE_ID)" $(APP_DIR)
 	xcrun devicectl device process launch --device "$(DEVICE_ID)" --terminate-existing $(SDL_APP_BUNDLE_ID)
 
 clean:
-	rm -rf $(APP_BUILD_DIR) $(SDL_BUILD_DIR)
+	rm -rf $(APP_BUILD_DIR) $(SDL_BUILD_DIR) $(SDL_TTF_BUILD_DIR)

@@ -4,8 +4,9 @@ ROOT_DIR ?= ..
 IOS_DEPLOYMENT_TARGET ?= 16.0
 IOS_SDK ?= iphonesimulator
 IOS_TARGET ?= arm64-apple-ios$(IOS_DEPLOYMENT_TARGET)-simulator
-APP_BUILD_DIR ?= $(ROOT_DIR)/build/ios-sdl-sim-app
+APP_BUILD_DIR ?= $(ROOT_DIR)/build/example-sdl-app-sim
 SDL_FRAMEWORK_SOURCE ?= $(ROOT_DIR)/build/sdl3/SDL3.xcframework/ios-arm64_x86_64-simulator/SDL3.framework
+SDL_TTF_FRAMEWORK_SOURCE ?= $(ROOT_DIR)/build/sdl3_ttf/SDL3_ttf.xcframework/ios-arm64_x86_64-simulator/SDL3_ttf.framework
 APP_MIN_VERSION_FLAG ?= -mios-simulator-version-min=$(IOS_DEPLOYMENT_TARGET)
 SIMULATOR_DEVICE ?= iPhone 16
 SDL_APP_BUNDLE_ID ?= dev.paulcadman.LeanSDLExample
@@ -27,4 +28,4 @@ run-sim-app: sim-app
 	xcrun simctl launch booted $(SDL_APP_BUNDLE_ID)
 
 clean:
-	rm -rf $(APP_BUILD_DIR) $(SDL_BUILD_DIR)
+	rm -rf $(APP_BUILD_DIR) $(SDL_BUILD_DIR) $(SDL_TTF_BUILD_DIR)

@@ -3,8 +3,8 @@
 #include <SDL3/SDL_main.h>
 
 #include "LeanSDLBindings.h"
-#include "../LeanRuntimeBridge.h"
-#include "../LeanSDLAppBridge.h"
+#include "LeanRuntimeBridge.h"
+#include "LeanSDLAppBridge.h"
 
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     (void)argc;

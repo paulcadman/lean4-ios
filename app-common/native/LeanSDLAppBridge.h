@@ -2,6 +2,7 @@
 #define LEAN_SDL_APP_BRIDGE_H
 
 #include <stdbool.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {

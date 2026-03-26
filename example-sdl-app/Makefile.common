@@ -205,10 +205,12 @@ $(APP_SVG_ASSET_DEST): $(APP_SVG_ASSET_SRC)
 
 $(APP_BIN): app-lib $(APP_STATIC_LIB) $(SDL_XCFRAMEWORK_INFO) $(RESVG_LIB) $(APP_BINDINGS_OBJ) $(APP_RUNTIME_BRIDGE_OBJ) $(APP_BRIDGE_OBJ) $(APP_REGISTRATION_OBJ) $(APP_MAIN_OBJ)
 	mkdir -p $(APP_DIR)
-	xcrun --sdk $(IOS_SDK) clang++ \
+	SDKROOT="$(IOS_SDK_PATH)" xcrun --sdk $(IOS_SDK) clang++ \
 	  -target $(IOS_TARGET) \
 	  -isysroot $(IOS_SDK_PATH) \
 	  $(APP_MIN_VERSION_FLAG) \
+	  -L$(IOS_SDK_PATH)/usr/lib \
+	  -Wl,-syslibroot,$(IOS_SDK_PATH) \
 	  -F$(dir $(SDL_FRAMEWORK_SOURCE)) \
 	  $(APP_MAIN_OBJ) \
 	  $(APP_STATIC_LIB) \

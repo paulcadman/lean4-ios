@@ -8,7 +8,7 @@ def maxFrameDt : Float := 0.25
 
 def warmupFrames : UInt32 := 5
 
-def makeConfig (width height : Nat) : Config :=
+def makeConfig (width height : Nat) : IO Config := do
   let pipeConfig := {
     speed := 180
     width := 80
@@ -22,15 +22,27 @@ def makeConfig (width height : Nat) : Config :=
     height := height
     backgroundColor := { r := 135, g := 206, b := 235, a := 255 }
     scoreTextColor := { r := 0, g := 0, b := 0, a := 255 }
-    endTextColor := { r := 255, g := 0, b := 0, a := 255 }
   }
+
+  let gameOverText := "GAME OVER"
+  let gameOverSize := 40
+  let (tw, th) ← SDL.measureText gameOverText gameOverSize
+
+  let gameOver := {
+    text := gameOverText
+    color := { r := 255, g := 0, b := 0, a := 255 }
+    size := gameOverSize.toNat
+    position := ((width - tw.toNat) / 2 , (height - th.toNat) / 3)
+  }
+
   {
     yScale := 2
     window := windowConfig
     bird := { x := width / 3, flapVelocity := -13 }
     gravityStep := 1
     pipe := pipeConfig
-  }
+    gameOver
+  } |> pure
 
 structure Assets where
   birdyUp : SDL.Texture
@@ -126,7 +138,7 @@ def sdlInit : IO Unit := do
   SDL.setupFullscreenWindowAndRenderer "Lean SDL Flappy"
   let width ← SDL.getWindowWidth
   let height ← SDL.getWindowHeight
-  let config := makeConfig width.toNat height.toNat
+  let config ← makeConfig width.toNat height.toNat
   let assets ← Assets.load
   let game ← initGameState config
   appState.set <| some {

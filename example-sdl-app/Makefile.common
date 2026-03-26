@@ -20,6 +20,16 @@ SDL_DEVICE_ARCHIVE := $(SDL_BUILD_DIR)/SDL3-iphoneos.xcarchive
 SDL_XCFRAMEWORK := $(SDL_BUILD_DIR)/SDL3.xcframework
 SDL_XCFRAMEWORK_INFO := $(SDL_XCFRAMEWORK)/Info.plist
 
+SDL_TTF_XCODE_DIR := $(ROOT_DIR)/third-party/SDL_ttf/Xcode
+SDL_TTF_XCODE_PROJECT := $(SDL_TTF_XCODE_DIR)/SDL_ttf.xcodeproj
+SDL_TTF_BUILD_DIR := $(BUILD_DIR)/sdl3_ttf
+SDL_TTF_MODULE_CACHE_DIR := $(SDL_TTF_BUILD_DIR)/ModuleCache
+SDL_TTF_BUILD_HOME := $(SDL_TTF_BUILD_DIR)/home
+SDL_TTF_SIM_ARCHIVE := $(SDL_TTF_BUILD_DIR)/SDL3_ttf-iphonesimulator.xcarchive
+SDL_TTF_DEVICE_ARCHIVE := $(SDL_TTF_BUILD_DIR)/SDL3_ttf-iphoneos.xcarchive
+SDL_TTF_XCFRAMEWORK := $(SDL_TTF_BUILD_DIR)/SDL3_ttf.xcframework
+SDL_TTF_XCFRAMEWORK_INFO := $(SDL_TTF_XCFRAMEWORK)/Info.plist
+
 RESVG_DIR := $(ROOT_DIR)/third-party/resvg
 RESVG_CAPI_MANIFEST := $(RESVG_DIR)/crates/c-api/Cargo.toml
 RESVG_INCLUDE_DIR := $(RESVG_DIR)/crates/c-api
@@ -36,6 +46,7 @@ APP_STATIC_LIB := $(APP_BUILD_DIR)/libExampleSDLApp.a
 APP_INFO_PLIST := $(APP_DIR)/Info.plist
 APP_FRAMEWORKS_DIR := $(APP_DIR)/Frameworks
 APP_SDL_FRAMEWORK := $(APP_FRAMEWORKS_DIR)/SDL3.framework
+APP_SDL_TTF_FRAMEWORK := $(APP_FRAMEWORKS_DIR)/SDL3_ttf.framework
 APP_LIB_TARGET := ExampleSDLApp:static
 APP_BINDINGS_SRC := $(APP_NATIVE_DIR)/LeanSDLBindings.c
 APP_BINDINGS_HEADER := $(APP_NATIVE_DIR)/LeanSDLBindings.h
@@ -54,8 +65,8 @@ APP_MAIN_OBJ := $(APP_OBJ_DIR)/main.o
 APP_INFO_PLIST_SRC := $(APP_NATIVE_DIR)/App/Info.plist
 APP_LAUNCH_STORYBOARD_SRC := $(APP_NATIVE_DIR)/App/LaunchScreen.storyboard
 APP_LAUNCH_STORYBOARD_DEST := $(APP_DIR)/LaunchScreen.storyboard
-APP_SVG_ASSET_SRC := $(APP_ASSETS_DIR)/bouncing_square.svg
-APP_SVG_ASSET_DEST := $(APP_DIR)/bouncing_square.svg
+APP_ASSETS_DEST_DIR := $(APP_DIR)/assets
+APP_ASSET_STAMP := $(APP_DIR)/.assets-stamp
 
 APP_PROJECT_CFLAGS := -Wall -Werror
 
@@ -94,6 +105,36 @@ $(SDL_XCFRAMEWORK_INFO):
 
 sdl3-xcframework: $(SDL_XCFRAMEWORK_INFO)
 
+$(SDL_TTF_XCFRAMEWORK_INFO):
+	rm -rf $(SDL_TTF_SIM_ARCHIVE) $(SDL_TTF_DEVICE_ARCHIVE) $(SDL_TTF_XCFRAMEWORK)
+	mkdir -p $(SDL_TTF_MODULE_CACHE_DIR) $(SDL_TTF_BUILD_HOME)
+	HOME=$(abspath $(SDL_TTF_BUILD_HOME)) xcodebuild archive \
+	  -project $(SDL_TTF_XCODE_PROJECT) \
+	  -scheme SDL3_ttf \
+	  -configuration Release \
+	  -archivePath $(abspath $(SDL_TTF_SIM_ARCHIVE)) \
+	  -destination 'generic/platform=iOS Simulator' \
+	  -derivedDataPath $(abspath $(SDL_TTF_BUILD_DIR))/DerivedData \
+	  CLANG_MODULE_CACHE_PATH=$(abspath $(SDL_TTF_MODULE_CACHE_DIR)) \
+	  BUILD_LIBRARY_FOR_DISTRIBUTION=YES \
+	  SKIP_INSTALL=NO
+	HOME=$(abspath $(SDL_TTF_BUILD_HOME)) xcodebuild archive \
+	  -project $(SDL_TTF_XCODE_PROJECT) \
+	  -scheme SDL3_ttf \
+	  -configuration Release \
+	  -archivePath $(abspath $(SDL_TTF_DEVICE_ARCHIVE)) \
+	  -destination 'generic/platform=iOS' \
+	  -derivedDataPath $(abspath $(SDL_TTF_BUILD_DIR))/DerivedData \
+	  CLANG_MODULE_CACHE_PATH=$(abspath $(SDL_TTF_MODULE_CACHE_DIR)) \
+	  BUILD_LIBRARY_FOR_DISTRIBUTION=YES \
+	  SKIP_INSTALL=NO
+	HOME=$(abspath $(SDL_TTF_BUILD_HOME)) xcodebuild -create-xcframework \
+	  -framework $(abspath $(SDL_TTF_SIM_ARCHIVE))/Products/Library/Frameworks/SDL3_ttf.framework \
+	  -framework $(abspath $(SDL_TTF_DEVICE_ARCHIVE))/Products/Library/Frameworks/SDL3_ttf.framework \
+	  -output $(abspath $(SDL_TTF_XCFRAMEWORK))
+
+sdl3-ttf-xcframework: $(SDL_TTF_XCFRAMEWORK_INFO)
+
 $(RESVG_LIB):
 	CARGO_TARGET_DIR="$(abspath $(RESVG_TARGET_DIR))" \
 	cargo build --manifest-path $(RESVG_CAPI_MANIFEST) --release --target $(RESVG_CARGO_TARGET) --no-default-features
@@ -122,7 +163,7 @@ app-lib: runtime
 	mkdir -p $(APP_BUILD_DIR)
 	cp "$$(lake query $(APP_LIB_TARGET))" $(APP_STATIC_LIB)
 
-$(APP_BINDINGS_OBJ): $(APP_BINDINGS_SRC) $(APP_BINDINGS_HEADER) $(SDL_XCFRAMEWORK_INFO) $(RESVG_LIB)
+$(APP_BINDINGS_OBJ): $(APP_BINDINGS_SRC) $(APP_BINDINGS_HEADER) $(SDL_XCFRAMEWORK_INFO) $(SDL_TTF_XCFRAMEWORK_INFO) $(RESVG_LIB)
 	mkdir -p $(APP_OBJ_DIR)
 	xcrun --sdk $(IOS_SDK) clang \
 	  -target $(IOS_TARGET) \
@@ -131,8 +172,10 @@ $(APP_BINDINGS_OBJ): $(APP_BINDINGS_SRC) $(APP_BINDINGS_HEADER) $(SDL_XCFRAMEWOR
 	  -I$(RUNTIME_BUILD_DIR)/include \
 	  -I$(LEAN_SRC_DIR)/stage0/src/include \
 	  -I$(LEAN_SRC_DIR)/src/include \
+	  -I$(ROOT_DIR)/third-party/SDL_ttf/include \
 		-I$(RESVG_INCLUDE_DIR) \
 	  -F$(dir $(SDL_FRAMEWORK_SOURCE)) \
+	  -F$(dir $(SDL_TTF_FRAMEWORK_SOURCE)) \
 	  $(APP_PROJECT_CFLAGS) \
 	  -c $(APP_BINDINGS_SRC) \
 	  -o $(APP_BINDINGS_OBJ)
@@ -199,11 +242,17 @@ $(APP_SDL_FRAMEWORK): $(SDL_XCFRAMEWORK_INFO)
 	rm -rf $(APP_SDL_FRAMEWORK)
 	cp -R $(SDL_FRAMEWORK_SOURCE) $(APP_SDL_FRAMEWORK)
 
-$(APP_SVG_ASSET_DEST): $(APP_SVG_ASSET_SRC)
-	mkdir -p $(APP_DIR)
-	cp $(APP_SVG_ASSET_SRC) $(APP_SVG_ASSET_DEST)
+$(APP_SDL_TTF_FRAMEWORK): $(SDL_TTF_XCFRAMEWORK_INFO)
+	mkdir -p $(APP_FRAMEWORKS_DIR)
+	rm -rf $(APP_SDL_TTF_FRAMEWORK)
+	cp -R $(SDL_TTF_FRAMEWORK_SOURCE) $(APP_SDL_TTF_FRAMEWORK)
 
-$(APP_BIN): app-lib $(APP_STATIC_LIB) $(SDL_XCFRAMEWORK_INFO) $(RESVG_LIB) $(APP_BINDINGS_OBJ) $(APP_RUNTIME_BRIDGE_OBJ) $(APP_BRIDGE_OBJ) $(APP_REGISTRATION_OBJ) $(APP_MAIN_OBJ)
+$(APP_ASSET_STAMP): $(shell find $(APP_ASSETS_DIR) -type f)
+	mkdir -p $(APP_ASSETS_DEST_DIR)
+	rsync -a $(APP_ASSETS_DIR)/ $(APP_ASSETS_DEST_DIR)/
+	touch $(APP_ASSET_STAMP)
+
+$(APP_BIN): app-lib $(APP_STATIC_LIB) $(SDL_XCFRAMEWORK_INFO) $(SDL_TTF_XCFRAMEWORK_INFO) $(RESVG_LIB) $(APP_BINDINGS_OBJ) $(APP_RUNTIME_BRIDGE_OBJ) $(APP_BRIDGE_OBJ) $(APP_REGISTRATION_OBJ) $(APP_MAIN_OBJ)
 	mkdir -p $(APP_DIR)
 	SDKROOT="$(IOS_SDK_PATH)" xcrun --sdk $(IOS_SDK) clang++ \
 	  -target $(IOS_TARGET) \
@@ -212,6 +261,7 @@ $(APP_BIN): app-lib $(APP_STATIC_LIB) $(SDL_XCFRAMEWORK_INFO) $(RESVG_LIB) $(APP
 	  -L$(IOS_SDK_PATH)/usr/lib \
 	  -Wl,-syslibroot,$(IOS_SDK_PATH) \
 	  -F$(dir $(SDL_FRAMEWORK_SOURCE)) \
+	  -F$(dir $(SDL_TTF_FRAMEWORK_SOURCE)) \
 	  $(APP_MAIN_OBJ) \
 	  $(APP_STATIC_LIB) \
 	  $(APP_BINDINGS_OBJ) \
@@ -222,6 +272,7 @@ $(APP_BIN): app-lib $(APP_STATIC_LIB) $(SDL_XCFRAMEWORK_INFO) $(RESVG_LIB) $(APP
 	  $(STDLIB_INIT_LIB) \
 	  $(RUNTIME_LIB) \
 	  -framework SDL3 \
+	  -framework SDL3_ttf \
 	  -framework UIKit \
 	  -framework Foundation \
 	  -Xlinker -rpath -Xlinker @executable_path/Frameworks \
@@ -235,4 +286,4 @@ $(APP_LAUNCH_STORYBOARD_DEST): $(APP_LAUNCH_STORYBOARD_SRC)
 	mkdir -p $(APP_DIR)
 	cp $(APP_LAUNCH_STORYBOARD_SRC) $(APP_LAUNCH_STORYBOARD_DEST)
 
-app: $(APP_BIN) $(APP_INFO_PLIST) $(APP_LAUNCH_STORYBOARD_DEST) $(APP_SDL_FRAMEWORK) $(APP_SVG_ASSET_DEST)
+app: $(APP_BIN) $(APP_INFO_PLIST) $(APP_LAUNCH_STORYBOARD_DEST) $(APP_SDL_FRAMEWORK) $(APP_SDL_TTF_FRAMEWORK) $(APP_SVG_ASSET_DEST) $(APP_ASSET_STAMP)

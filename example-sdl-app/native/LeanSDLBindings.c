@@ -5,11 +5,14 @@
 #include <stdint.h>
 
 #include <SDL3/SDL.h>
+#include <SDL3_ttf/SDL_ttf.h>
 
 static SDL_Window *g_window = NULL;
 static SDL_Renderer *g_renderer = NULL;
+static TTF_Font *g_font = NULL;
 static Uint64 g_last_present_time_ns = 0;
 static double g_frame_time_seconds = 0.0;
+static const char *g_font_asset_path = "assets/SourceSansPro-Regular.ttf";
 
 static lean_external_class *g_sdl_texture_class = NULL;
 
@@ -39,6 +42,11 @@ static lean_object *lean_sdl_texture_mk(void *texture) {
 
 static inline lean_obj_res lean_sdl_error(const char *msg) {
   return lean_io_result_mk_error(lean_mk_io_user_error(lean_mk_string(msg)));
+}
+
+static bool lean_sdl_load_default_font(void) {
+  g_font = TTF_OpenFont(g_font_asset_path, 20.0f);
+  return g_font != NULL;
 }
 
 lean_obj_res lean_sdl_load_svg_texture(b_lean_obj_arg path_arg) {
@@ -152,6 +160,14 @@ lean_sdl_setup_fullscreen_window_and_renderer(b_lean_obj_arg title) {
     return lean_sdl_error(SDL_GetError());
   }
 
+  if (TTF_WasInit() == 0 && !TTF_Init()) {
+    return lean_sdl_error(SDL_GetError());
+  }
+
+  if (!lean_sdl_load_default_font()) {
+    return lean_sdl_error(SDL_GetError());
+  }
+
   return lean_io_result_mk_ok(lean_box(0));
 }
 
@@ -239,10 +255,77 @@ lean_obj_res lean_sdl_shutdown(void) {
   }
   g_last_present_time_ns = 0;
   g_frame_time_seconds = 0.0;
+  if (TTF_WasInit() > 0) {
+    TTF_Quit();
+  }
   SDL_Quit();
   return lean_io_result_mk_ok(lean_box(0));
 }
 
 lean_obj_res lean_sdl_get_frame_time(void) {
   return lean_io_result_mk_ok(lean_box_float(g_frame_time_seconds));
+}
+
+lean_obj_res lean_sdl_measure_text(b_lean_obj_arg text_arg, uint32_t size) {
+    int width = 0;
+    int height = 0;
+    lean_object *result = NULL;
+
+    if (g_font == NULL) {
+        return lean_sdl_error("font not initialized");
+    }
+    if (!TTF_SetFontSize(g_font, (float)size)) {
+        return lean_sdl_error(SDL_GetError());
+    }
+    if (!TTF_GetStringSize(g_font, lean_string_cstr(text_arg), 0, &width, &height)) {
+        return lean_sdl_error(SDL_GetError());
+    }
+
+    result = lean_alloc_ctor(0, 2, 0);
+    lean_ctor_set(result, 0, lean_box_uint32((uint32_t)width));
+    lean_ctor_set(result, 1, lean_box_uint32((uint32_t)height));
+    return lean_io_result_mk_ok(result);
+}
+
+lean_obj_res lean_sdl_draw_text(b_lean_obj_arg text_arg, double x, double y,
+                                uint32_t size, uint32_t r, uint32_t g,
+                                uint32_t b, uint32_t a) {
+    if (g_renderer == NULL) {
+        return lean_sdl_error("renderer not initialized");
+    }
+    if (g_font == NULL) {
+        return lean_sdl_error("font not initialized");
+    }
+    if (!TTF_SetFontSize(g_font, (float)size)) {
+        return lean_sdl_error(SDL_GetError());
+    }
+
+    SDL_Color color = {.r = (Uint8)r, .g = (Uint8)g, .b = (Uint8)b, .a = (Uint8)a};
+    SDL_Surface *surface =
+        TTF_RenderText_Blended(g_font, lean_string_cstr(text_arg), 0, color);
+    if (surface == NULL) {
+        return lean_sdl_error(SDL_GetError());
+    }
+
+    SDL_Texture *texture = SDL_CreateTextureFromSurface(g_renderer, surface);
+    if (texture == NULL) {
+        SDL_DestroySurface(surface);
+        return lean_sdl_error(SDL_GetError());
+    }
+
+    SDL_FRect rect = {
+        .x = (float)x,
+        .y = (float)y,
+        .w = (float)surface->w,
+        .h = (float)surface->h,
+    };
+    SDL_DestroySurface(surface);
+
+    if (!SDL_RenderTexture(g_renderer, texture, NULL, &rect)) {
+        SDL_DestroyTexture(texture);
+        return lean_sdl_error(SDL_GetError());
+    }
+
+    SDL_DestroyTexture(texture);
+    return lean_io_result_mk_ok(lean_box(0));
 }

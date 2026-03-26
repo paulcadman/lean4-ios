@@ -8,6 +8,10 @@ def maxFrameDt : Float := 0.25
 
 def warmupFrames : UInt32 := 100
 
+def text : String := "Hello"
+
+def textSize : UInt32 := 32
+
 structure AppState where
   frame : UInt32
   x : Float
@@ -18,6 +22,8 @@ structure AppState where
   maxY : Float
   accumulator : Float
   square : Option SDL.Texture
+  textWidth : Float
+  textHeight : Float
 deriving Inhabited
 
 def bounce (pos vel limit dt : Float) : Float × Float :=
@@ -29,17 +35,7 @@ def bounce (pos vel limit dt : Float) : Float × Float :=
   else
     (next, vel)
 
-initialize appState : IO.Ref AppState <- IO.mkRef {
-  frame := 0
-  x := 0.0
-  y := 0.0
-  dx := 0.0
-  dy := 0.0
-  maxX := 0.0
-  maxY := 0.0
-  accumulator := 0.0
-  square := none
-}
+initialize appState : IO.Ref AppState <- IO.mkRef default
 
 @[export sdlInit]
 def sdlInit : IO Unit := do
@@ -49,7 +45,8 @@ def sdlInit : IO Unit := do
   let height ← SDL.getWindowHeight
   let maxX := max 0.0 (width.toFloat - squareSize)
   let maxY := max 0.0 (height.toFloat - squareSize)
-  let square ← SDL.loadSvgTexture "bouncing_square.svg"
+  let square ← SDL.loadSvgTexture "assets/bouncing_square.svg"
+  let (textWidth, textHeight) <- SDL.measureText text textSize
   appState.set {
     frame := 0
     x := 0.0
@@ -60,6 +57,8 @@ def sdlInit : IO Unit := do
     maxY := maxY
     accumulator := 0.0
     square := some square
+    textWidth := textWidth.toFloat
+    textHeight := textHeight.toFloat
   }
 
 @[export sdlIterate]
@@ -74,16 +73,13 @@ def sdlIterate : IO Unit := do
     while remaining >= tickDt do
       let (x, dx) := bounce stepped.x stepped.dx stepped.maxX tickDt
       let (y, dy) := bounce stepped.y stepped.dy stepped.maxY tickDt
-      stepped := {
+      stepped := { stepped with
         frame := stepped.frame + 1
         x := x
         y := y
         dx := dx
         dy := dy
-        maxX := stepped.maxX
-        maxY := stepped.maxY
         accumulator := remaining - tickDt
-        square := state.square
       }
       remaining := remaining - tickDt
     stepped := { stepped with accumulator := remaining }
@@ -100,6 +96,14 @@ def sdlIterate : IO Unit := do
       squareSize
   | some t => do
     SDL.renderTexture t stepped.x stepped.y squareSize squareSize
+
+  SDL.drawText
+    text
+    (stepped.x + (squareSize - state.textWidth) / 2)
+    (stepped.y + (squareSize - state.textHeight) / 2)
+    textSize
+    255 255 255 255
+
   SDL.renderPresent
   appState.set stepped
 

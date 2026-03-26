@@ -32,10 +32,16 @@ opaque shutdown : IO Unit
 @[extern "lean_sdl_get_frame_time"]
 opaque getFrameTime : IO Float
 
+@[extern "lean_sdl_measure_text"]
+opaque measureText : @& String → (size : UInt32) → IO (UInt32 × UInt32)
+
 @[extern "lean_sdl_load_svg_texture"]
 opaque loadSvgTexture : @& String → IO Texture
 
 @[extern "lean_sdl_render_texture"]
 opaque renderTexture : @& Texture → (x : Float) → (y : Float) → (width : Float) → (height : Float) → IO Unit
+
+@[extern "lean_sdl_draw_text"]
+opaque drawText : @& String → (x : Float) → (y : Float) → (size : UInt32) → (r : UInt32) → (g : UInt32) → (b : UInt32) → (a : UInt32) → IO Unit
 
 end SDL

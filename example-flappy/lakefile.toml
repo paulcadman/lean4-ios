@@ -1,0 +1,21 @@
+name = "example_flappy"
+version = "0.1.0"
+defaultTargets = ["ExampleFlappyApp"]
+
+[leanOptions]
+autoImplicit = false
+
+[[require]]
+name = "sdl_bindings"
+path = "../sdl-bindings"
+
+[[require]]
+name = "flappy"
+git = "https://github.com/paulcadman/flappy.git"
+rev = "f95f5bea4d71bcd261ae1721a52d77edcea34d15"
+
+[[lean_lib]]
+name = "ExampleFlappyApp"
+srcDir = "lean"
+roots = ["ExampleFlappy"]
+defaultFacets = ["static"]

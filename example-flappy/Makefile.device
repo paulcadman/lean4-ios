@@ -1,0 +1,5 @@
+include App.mk
+
+APP_BUILD_DIR ?= $(ROOT_DIR)/build/example-flappy-device
+
+include ../app-common/Makefile.device

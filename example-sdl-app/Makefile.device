@@ -1,47 +1,5 @@
-ROOT_DIR ?= ..
-IOS_DEPLOYMENT_TARGET ?= 16.0
-IOS_SDK ?= iphoneos
-IOS_TARGET ?= arm64-apple-ios$(IOS_DEPLOYMENT_TARGET)
+include App.mk
+
 APP_BUILD_DIR ?= $(ROOT_DIR)/build/example-sdl-app-device
-SDL_FRAMEWORK_SOURCE ?= $(ROOT_DIR)/build/sdl3/SDL3.xcframework/ios-arm64/SDL3.framework
-SDL_TTF_FRAMEWORK_SOURCE ?= $(ROOT_DIR)/build/sdl3_ttf/SDL3_ttf.xcframework/ios-arm64/SDL3_ttf.framework
-APP_MIN_VERSION_FLAG ?= -miphoneos-version-min=$(IOS_DEPLOYMENT_TARGET)
-SDL_APP_BUNDLE_ID ?= dev.paulcadman.LeanSDLExample
-RESVG_CARGO_TARGET ?= aarch64-apple-ios
-DEVICE_ID ?=
-DEVICE_CODESIGN_IDENTITY ?=
-DEVICE_PROVISION_PROFILE ?=
-DEVICE_CODESIGN_FLAGS ?= --timestamp=none
-APP_ENTITLEMENTS = $(APP_BUILD_DIR)/LeanSDLExample.entitlements
 
-include Makefile.common
-
-.PHONY: device-runtime device-app-lib device-app run-device-app clean
-
-device-runtime: runtime
-
-device-app-lib: app-lib
-
-device-app: app
-
-run-device-app: device-app
-	@if [ -z "$(DEVICE_ID)" ]; then echo "Set DEVICE_ID=<udid|name>"; exit 1; fi
-	@if [ -z "$(DEVICE_CODESIGN_IDENTITY)" ]; then echo "Set DEVICE_CODESIGN_IDENTITY=<codesign identity>"; exit 1; fi
-	@if [ -z "$(DEVICE_PROVISION_PROFILE)" ]; then echo "Set DEVICE_PROVISION_PROFILE=/path/to/profile.mobileprovision"; exit 1; fi
-	mkdir -p $(APP_BUILD_DIR)
-	security cms -D -i "$(DEVICE_PROVISION_PROFILE)" > $(APP_BUILD_DIR)/profile.plist
-	/usr/libexec/PlistBuddy -x -c 'Print :Entitlements' $(APP_BUILD_DIR)/profile.plist > $(APP_ENTITLEMENTS)
-	TEAM_ID="$$(/usr/libexec/PlistBuddy -c 'Print :TeamIdentifier:0' $(APP_BUILD_DIR)/profile.plist)"; \
-	/usr/libexec/PlistBuddy -c "Set :application-identifier $$TEAM_ID.$(SDL_APP_BUNDLE_ID)" $(APP_ENTITLEMENTS); \
-	if /usr/libexec/PlistBuddy -c 'Print :keychain-access-groups:0' $(APP_ENTITLEMENTS) >/dev/null 2>&1; then \
-	  /usr/libexec/PlistBuddy -c "Set :keychain-access-groups:0 $$TEAM_ID.$(SDL_APP_BUNDLE_ID)" $(APP_ENTITLEMENTS); \
-	fi
-	cp "$(DEVICE_PROVISION_PROFILE)" $(APP_DIR)/embedded.mobileprovision
-	codesign --force --sign "$(DEVICE_CODESIGN_IDENTITY)" $(DEVICE_CODESIGN_FLAGS) $(APP_SDL_FRAMEWORK)
-	codesign --force --sign "$(DEVICE_CODESIGN_IDENTITY)" $(DEVICE_CODESIGN_FLAGS) $(APP_SDL_TTF_FRAMEWORK)
-	codesign --force --sign "$(DEVICE_CODESIGN_IDENTITY)" $(DEVICE_CODESIGN_FLAGS) --entitlements $(APP_ENTITLEMENTS) $(APP_DIR)
-	xcrun devicectl device install app --device "$(DEVICE_ID)" $(APP_DIR)
-	xcrun devicectl device process launch --device "$(DEVICE_ID)" --terminate-existing $(SDL_APP_BUNDLE_ID)
-
-clean:
-	rm -rf $(APP_BUILD_DIR) $(SDL_BUILD_DIR) $(SDL_TTF_BUILD_DIR)
+include ../app-common/Makefile.device

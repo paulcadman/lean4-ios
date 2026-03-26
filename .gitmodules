@@ -7,3 +7,6 @@
 [submodule "third-party/resvg"]
 	path = third-party/resvg
 	url = https://github.com/RazrFalcon/resvg.git
+[submodule "third-party/SDL_ttf"]
+	path = third-party/SDL_ttf
+	url = https://github.com/libsdl-org/SDL_ttf.git

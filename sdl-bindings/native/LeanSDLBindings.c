@@ -12,6 +12,7 @@ static SDL_Renderer *g_renderer = NULL;
 static TTF_Font *g_font = NULL;
 static Uint64 g_last_present_time_ns = 0;
 static double g_frame_time_seconds = 0.0;
+static bool g_tap_pending = false;
 static const char *g_font_asset_path = "assets/SourceSansPro-Regular.ttf";
 
 static lean_external_class *g_sdl_texture_class = NULL;
@@ -42,6 +43,21 @@ static lean_object *lean_sdl_texture_mk(void *texture) {
 
 static inline lean_obj_res lean_sdl_error(const char *msg) {
   return lean_io_result_mk_error(lean_mk_io_user_error(lean_mk_string(msg)));
+}
+
+void lean_sdl_record_input_event(const SDL_Event *event) {
+  if (event == NULL) {
+    return;
+  }
+
+  switch (event->type) {
+    case SDL_EVENT_MOUSE_BUTTON_DOWN:
+    case SDL_EVENT_FINGER_DOWN:
+      g_tap_pending = true;
+      break;
+    default:
+      break;
+  }
 }
 
 static bool lean_sdl_load_default_font(void) {
@@ -131,6 +147,7 @@ lean_sdl_setup_fullscreen_window_and_renderer(b_lean_obj_arg title) {
 
   g_last_present_time_ns = 0;
   g_frame_time_seconds = 0.0;
+  g_tap_pending = false;
 
   g_window = SDL_CreateWindow(lean_string_cstr(title), 0, 0, window_flags);
   if (g_window == NULL) {
@@ -255,6 +272,7 @@ lean_obj_res lean_sdl_shutdown(void) {
   }
   g_last_present_time_ns = 0;
   g_frame_time_seconds = 0.0;
+  g_tap_pending = false;
   if (TTF_WasInit() > 0) {
     TTF_Quit();
   }
@@ -264,6 +282,23 @@ lean_obj_res lean_sdl_shutdown(void) {
 
 lean_obj_res lean_sdl_get_frame_time(void) {
   return lean_io_result_mk_ok(lean_box_float(g_frame_time_seconds));
+}
+
+lean_obj_res lean_sdl_is_key_down(uint32_t scancode) {
+  const bool *keyboard = SDL_GetKeyboardState(NULL);
+  if (keyboard == NULL) {
+    return lean_sdl_error(SDL_GetError());
+  }
+  if (scancode >= SDL_SCANCODE_COUNT) {
+    return lean_io_result_mk_ok(lean_box(0));
+  }
+  return lean_io_result_mk_ok(lean_box(keyboard[scancode] ? 1 : 0));
+}
+
+lean_obj_res lean_sdl_consume_tap(void) {
+  bool pending = g_tap_pending;
+  g_tap_pending = false;
+  return lean_io_result_mk_ok(lean_box(pending ? 1 : 0));
 }
 
 lean_obj_res lean_sdl_measure_text(b_lean_obj_arg text_arg, uint32_t size) {

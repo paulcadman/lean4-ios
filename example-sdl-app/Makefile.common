@@ -202,6 +202,7 @@ $(APP_MAIN_OBJ): $(APP_MAIN_SRC) $(SDL_XCFRAMEWORK_INFO) $(APP_RUNTIME_BRIDGE_HE
 	  -I$(LEAN_SRC_DIR)/stage0/src/include \
 	  -I$(LEAN_SRC_DIR)/src/include \
 	  -I$(APP_NATIVE_DIR) \
+	  -I$(SDL_BINDINGS_DIR)/native \
 	  -F$(dir $(SDL_FRAMEWORK_SOURCE)) \
 	  $(APP_PROJECT_CFLAGS) \
 	  -c $(APP_MAIN_SRC) \

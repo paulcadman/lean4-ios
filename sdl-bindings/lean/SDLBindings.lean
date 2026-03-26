@@ -2,6 +2,13 @@ namespace SDL
 
 opaque Texture : Type
 
+namespace Key
+
+def r : UInt32 := 21
+def space : UInt32 := 44
+
+end Key
+
 @[extern "lean_sdl_init_video"]
 opaque initVideo : IO Unit
 
@@ -31,6 +38,12 @@ opaque shutdown : IO Unit
 
 @[extern "lean_sdl_get_frame_time"]
 opaque getFrameTime : IO Float
+
+@[extern "lean_sdl_is_key_down"]
+opaque isKeyDown : UInt32 → IO Bool
+
+@[extern "lean_sdl_consume_tap"]
+opaque consumeTap : IO Bool
 
 @[extern "lean_sdl_measure_text"]
 opaque measureText : @& String → (size : UInt32) → IO (UInt32 × UInt32)

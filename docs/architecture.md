@@ -1,15 +1,6 @@
 # Project Architecture
 
 ```mermaid
-%%{init: {
-  "flowchart": { "useMaxWidth": true, "nodeSpacing": 25, "rankSpacing": 45 },
-  "themeVariables": {
-    "fontSize": "24px",
-    "primaryTextColor": "#111111",
-    "lineColor": "#333333"
-  }
-}}%%
-
 flowchart LR
   subgraph Left[" "]
     direction TB
@@ -44,4 +35,6 @@ flowchart LR
   SDL3 --> Final
   SDLTTF --> Final
   Resvg --> Final
+
+  linkStyle default stroke:#555555,color:#555555,stroke-width:2px;
 ```

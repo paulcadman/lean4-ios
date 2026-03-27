@@ -4,6 +4,8 @@ This repository contains a modified Lean4 source tree with changes to let the
 Lean runtime and stage0 standard library be built with the iOS toolchain and
 linked into iOS apps.
 
+For an overview of the project structure and build dependencies, see [Architecture](docs/architecture.md).
+
 It also includes:
 
 ### Flappy bird

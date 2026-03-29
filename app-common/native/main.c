@@ -2,7 +2,6 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
 
-#include "LeanSDLBindings.h"
 #include "LeanRuntimeBridge.h"
 #include "LeanSDLAppBridge.h"
 
@@ -29,7 +28,9 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
 
 SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
     (void)appstate;
-    lean_sdl_record_input_event(event);
+    if (!lean_sdl_app_event(event->type)) {
+        return SDL_APP_FAILURE;
+    }
     switch (event->type) {
         case SDL_EVENT_QUIT:
         case SDL_EVENT_TERMINATING:

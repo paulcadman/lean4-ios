@@ -10,6 +10,7 @@ extern "C" {
 
 bool lean_sdl_app_init(void);
 bool lean_sdl_app_iterate(void);
+bool lean_sdl_app_event(uint32_t event_type);
 void lean_sdl_app_quit(void);
 
 #ifdef __cplusplus

@@ -42,6 +42,9 @@ opaque getFrameTime : IO Float
 @[extern "lean_sdl_is_key_down"]
 opaque isKeyDown : UInt32 → IO Bool
 
+@[extern "lean_sdl_record_event"]
+opaque recordEvent : UInt32 → IO Unit
+
 @[extern "lean_sdl_consume_tap"]
 opaque consumeTap : IO Bool
 

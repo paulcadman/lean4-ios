@@ -45,12 +45,8 @@ static inline lean_obj_res lean_sdl_error(const char *msg) {
   return lean_io_result_mk_error(lean_mk_io_user_error(lean_mk_string(msg)));
 }
 
-void lean_sdl_record_input_event(const SDL_Event *event) {
-  if (event == NULL) {
-    return;
-  }
-
-  switch (event->type) {
+lean_obj_res lean_sdl_record_event(uint32_t event_type) {
+  switch (event_type) {
     case SDL_EVENT_MOUSE_BUTTON_DOWN:
     case SDL_EVENT_FINGER_DOWN:
       g_tap_pending = true;
@@ -58,6 +54,8 @@ void lean_sdl_record_input_event(const SDL_Event *event) {
     default:
       break;
   }
+
+  return lean_io_result_mk_ok(lean_box(0));
 }
 
 static bool lean_sdl_load_default_font(void) {

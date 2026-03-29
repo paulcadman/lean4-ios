@@ -107,6 +107,10 @@ def sdlIterate : IO Unit := do
   SDL.renderPresent
   appState.set stepped
 
+@[export sdlEvent]
+def sdlEvent (eventType : UInt32) : IO Unit := do
+  SDL.recordEvent eventType
+
 @[export sdlQuit]
 def sdlQuit : IO Unit := do
   SDL.shutdown

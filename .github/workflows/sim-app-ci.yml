@@ -8,6 +8,13 @@ on:
 jobs:
   sim-app-builds:
     runs-on: macos-latest
+    env:
+      CCACHE_DIR: ${{ github.workspace }}/.ccache
+      CCACHE_BASEDIR: ${{ github.workspace }}
+      CCACHE_COMPILERCHECK: content
+      CCACHE_NOHASHDIR: "true"
+      CCACHE_MAXSIZE: 2G
+      CCACHE: ccache
 
     steps:
       - uses: actions/checkout@v5
@@ -30,31 +37,19 @@ jobs:
 
       - name: Install Homebrew dependencies
         run: |
-          brew install cmake
+          brew install cmake ccache
+
+      - name: Cache ccache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: ${{ runner.os }}-${{ runner.arch }}-${{ steps.cache-keys.outputs.xcode_version }}-ccache-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-${{ steps.cache-keys.outputs.xcode_version }}-ccache-
 
       - name: Install Rust iOS targets
         run: |
           rustup target add aarch64-apple-ios-sim aarch64-apple-ios
-
-      - name: Cache Lean iOS build artifacts
-        uses: actions/cache@v4
-        with:
-          path: |
-            build/lean4-arm64_apple_ios16_0_simulator-runtime/include
-            build/lean4-arm64_apple_ios16_0_simulator-runtime/lib/lean
-            build/ios-lean-arm64_apple_ios16_0_simulator/lib
-          key: ${{ runner.os }}-${{ runner.arch }}-${{ steps.cache-keys.outputs.xcode_version }}-lean-ios-sim-${{ steps.cache-keys.outputs.lean4_sha }}-${{ hashFiles('lean-toolchain', 'Makefile', 'app-common/Makefile.common', 'scripts/ios-*.sh') }}
-
-      - name: Cache Lean host stage1 stdlib and oleans
-        uses: actions/cache@v4
-        with:
-          path: |
-            build/lean4-host-nogmp/CMakeCache.txt
-            build/lean4-host-nogmp/Makefile
-            build/lean4-host-nogmp/CMakeFiles
-            build/lean4-host-nogmp/stage0
-            build/lean4-host-nogmp/stage1
-          key: ${{ runner.os }}-${{ runner.arch }}-${{ steps.cache-keys.outputs.xcode_version }}-lean-host-stage1-${{ steps.cache-keys.outputs.lean4_sha }}-${{ hashFiles('lean-toolchain', 'Makefile', 'lean4/CMakeLists.txt', 'lean4/src/CMakeLists.txt', 'lean4/stage0/src/CMakeLists.txt') }}
 
       - name: Build example-sdl-app sim app
         run: make -C example-sdl-app sim-app
@@ -67,3 +62,7 @@ jobs:
 
       - name: Build example-elab-app sim app
         run: make -C example-elab-app sim-app
+
+      - name: Show ccache stats
+        if: always()
+        run: ccache --show-stats

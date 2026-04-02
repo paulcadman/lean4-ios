@@ -6,7 +6,7 @@ include ../app-common/Makefile.device
 
 $(APP_OBJ_DIR)/HttpBridge.o: $(APP_NATIVE_DIR)/HttpBridge.m
 	mkdir -p $(APP_OBJ_DIR)
-	xcrun --sdk $(IOS_SDK) clang \
+	IOS_SDK="$(IOS_SDK)" CCACHE="$(CCACHE)" $(abspath $(ROOT_DIR)/scripts/ios-clang.sh) \
 	  -target $(IOS_TARGET) \
 	  -isysroot $(IOS_SDK_PATH) \
 	  $(APP_MIN_VERSION_FLAG) \

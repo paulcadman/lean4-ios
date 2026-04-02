@@ -25,6 +25,11 @@ AR := xcrun --sdk $(IOS_SDK) ar
 IOS_LEANC := $(abspath scripts/ios-leanc.sh)
 RUNTIME_CONFIG_STAMP := $(LEAN_RUNTIME_BUILD_DIR)/CMakeCache.txt
 HOST_CONFIG_STAMP := $(HOST_LEAN_BUILD_DIR)/Makefile
+CCACHE ?=
+
+ifneq ($(strip $(CCACHE)),)
+CMAKE_CCACHE_ARGS := -DCMAKE_C_COMPILER_LAUNCHER=$(CCACHE) -DCMAKE_CXX_COMPILER_LAUNCHER=$(CCACHE)
+endif
 
 .PHONY: all runtime ios-runtime stdlib-init stdlib-std stdlib-lean host-lean-stdlib host-lean-stdlib-fresh host-oleans clean
 
@@ -54,12 +59,14 @@ $(RUNTIME_CONFIG_STAMP): $(LEAN_SRC_DIR)/src/CMakeLists.txt $(LEAN_SRC_DIR)/src/
 		-DCMAKE_OSX_ARCHITECTURES=arm64 \
 		-DCMAKE_OSX_DEPLOYMENT_TARGET=$(IOS_DEPLOYMENT_TARGET) \
 		-DCMAKE_BUILD_TYPE=Release \
+		$(CMAKE_CCACHE_ARGS) \
 		-DUSE_MIMALLOC=OFF \
 		-DUSE_LIBUV=OFF \
 		-DUSE_GMP=OFF
 
 $(HOST_CONFIG_STAMP): $(LEAN_SRC_DIR)/CMakeLists.txt $(LEAN_SRC_DIR)/src/CMakeLists.txt $(LEAN_SRC_DIR)/stage0/src/CMakeLists.txt $(LEAN_SRC_DIR)/src/config.h.in $(LEAN_SRC_DIR)/stage0/src/config.h.in Makefile
 	cmake -S $(LEAN_SRC_DIR) -B $(HOST_LEAN_BUILD_DIR) \
+		$(CMAKE_CCACHE_ARGS) \
 		-DUSE_GMP=OFF \
 		-DUSE_LIBUV=OFF
 

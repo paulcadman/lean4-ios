@@ -5,6 +5,7 @@ ROOT_DIR := ..
 LEAN_SRC_DIR := $(ROOT_DIR)/lean4
 SIMULATOR_SDK ?= iphonesimulator
 IOS_DEPLOYMENT_TARGET ?= 16.0
+CCACHE ?=
 SIMULATOR_TARGET ?= arm64-apple-ios$(IOS_DEPLOYMENT_TARGET)-simulator
 SIMULATOR_SDK_TAG := $(subst -,_,$(subst .,_,$(SIMULATOR_TARGET)))
 SIMULATOR_DEVICE ?= iPhone 16
@@ -47,11 +48,12 @@ app-lib: sim-runtime
 	LEAN_RUNTIME_INCLUDE="$(abspath $(SIM_RUNTIME_BUILD_DIR))/include" \
 	LEAN_STAGE0_INCLUDE="$(abspath $(LEAN_SRC_DIR))/stage0/src/include" \
 	LEAN_SRC_INCLUDE="$(abspath $(LEAN_SRC_DIR))/src/include" \
+	CCACHE="$(CCACHE)" \
 	lake build $(APP_LIB_TARGET)
 
 $(APP_BRIDGE_OBJ): $(APP_BRIDGE_SRC) $(APP_BRIDGE_HEADER)
 	mkdir -p $(APP_OBJ_DIR)
-	xcrun --sdk $(SIMULATOR_SDK) clang++ \
+	IOS_SDK="$(SIMULATOR_SDK)" CCACHE="$(CCACHE)" $(abspath $(ROOT_DIR)/scripts/ios-clangxx.sh) \
 	  -target $(SIMULATOR_TARGET) \
 	  -isysroot $(SIMULATOR_SDK_PATH) \
 	  -mios-simulator-version-min=$(IOS_DEPLOYMENT_TARGET) \

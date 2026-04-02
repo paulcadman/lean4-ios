@@ -108,23 +108,21 @@ structure AppState where
   config : Config
   assets : Assets
   game : State
+  randGen : StdGen
 
 initialize appState : IO.Ref (Option AppState) <- IO.mkRef none
 
 def initGameState (config : Config) : IO State := do
-  let bytes ← IO.getRandomBytes 8
-  let seed : Nat := bytes.toUInt64BE! |>.toNat
   pure {
     bird := {
       y := config.yScale * config.window.height / 3
       velocity := config.bird.flapVelocity
     }
     pipes := []
-    randGen := mkStdGen seed
   }
 
-def stepGame (config : Config) (game : State) (isSpaceDown : Bool) : IO State :=
-  ((game.step isSpaceDown : ReaderT Config IO State).run config)
+def stepGame (config : Config) (game : State) (isSpaceDown : Bool) (gen : StdGen) : IO (State × StdGen) :=
+  ((game.step isSpaceDown : ReaderT Config (StateT StdGen IO) State).run config |>.run gen)
 
 def hasCollision (config : Config) (game : State) : IO Bool :=
   ((game.hasCollision : ReaderT Config IO Bool).run config)
@@ -141,12 +139,15 @@ def sdlInit : IO Unit := do
   let config ← makeConfig width.toNat height.toNat
   let assets ← Assets.load
   let game ← initGameState config
+  let bytes ← IO.getRandomBytes 8
+  let seed : Nat := bytes.toUInt64BE! |>.toNat
   appState.set <| some {
     frame := 0
     accumulator := 0.0
     config := config
     assets := assets
     game := game
+    randGen := mkStdGen seed
   }
 
 @[export sdlIterate]
@@ -157,6 +158,7 @@ def sdlIterate : IO Unit := do
   let mut frame := state.frame
   let mut accumulator := state.accumulator
   let mut game := state.game
+  let mut randGen := state.randGen
 
   if frame < warmupFrames then
     frame := frame + 1
@@ -171,7 +173,7 @@ def sdlIterate : IO Unit := do
       let shouldFlap := isSpaceDown || didTap
       let isRestartDown ← SDL.isKeyDown SDL.Key.r
       if !(← hasCollision state.config game) then
-        game ← stepGame state.config game shouldFlap
+        (game, randGen) ← stepGame state.config game shouldFlap randGen
       else if isRestartDown || didTap then
         game ← initGameState state.config
       remaining := remaining - tickDt
@@ -181,11 +183,12 @@ def sdlIterate : IO Unit := do
   renderGame state.config state.assets game
   SDL.renderPresent
   appState.set <| some {
-    frame := frame
+    frame
     accumulator := accumulator
     config := state.config
     assets := state.assets
-    game := game
+    game
+    randGen
   }
 
 @[export sdlEvent]

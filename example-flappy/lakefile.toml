@@ -12,7 +12,7 @@ path = "../sdl-bindings"
 [[require]]
 name = "flappy"
 git = "https://github.com/paulcadman/flappy.git"
-rev = "0a31d8279d9f0599a703388ad225e37816fc96a3"
+rev = "ae49fe7c1a2af64cd38ccc7ac26b6f4ea9d58639"
 
 [[lean_lib]]
 name = "ExampleFlappyApp"

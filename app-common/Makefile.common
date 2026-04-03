@@ -2,7 +2,6 @@ ROOT_DIR ?= ..
 
 LEAN_SRC_DIR := $(ROOT_DIR)/lean4
 IOS_DEPLOYMENT_TARGET ?= 16.0
-CCACHE ?=
 IOS_TARGET_TAG := $(subst -,_,$(subst .,_,$(IOS_TARGET)))
 BUILD_DIR := $(ROOT_DIR)/build
 RUNTIME_BUILD_DIR := $(BUILD_DIR)/lean4-$(IOS_TARGET_TAG)-runtime
@@ -156,7 +155,6 @@ app-lib: runtime
 	LEAN_RUNTIME_INCLUDE="$(abspath $(RUNTIME_BUILD_DIR))/include" \
 	LEAN_STAGE0_INCLUDE="$(abspath $(LEAN_SRC_DIR))/stage0/src/include" \
 	LEAN_SRC_INCLUDE="$(abspath $(LEAN_SRC_DIR))/src/include" \
-	CCACHE="$(CCACHE)" \
 	lake clean
 	LEAN_CC="$(abspath $(ROOT_DIR)/scripts/ios-leanc.sh)" \
 	LEAN_AR="$(abspath $(ROOT_DIR)/scripts/ios-ar.sh)" \
@@ -166,14 +164,13 @@ app-lib: runtime
 	LEAN_RUNTIME_INCLUDE="$(abspath $(RUNTIME_BUILD_DIR))/include" \
 	LEAN_STAGE0_INCLUDE="$(abspath $(LEAN_SRC_DIR))/stage0/src/include" \
 	LEAN_SRC_INCLUDE="$(abspath $(LEAN_SRC_DIR))/src/include" \
-	CCACHE="$(CCACHE)" \
 	lake build $(APP_LIB_TARGET) $(SDL_BINDINGS_LIB_TARGET) $(APP_DEP_STATIC_TARGETS)
 	mkdir -p $(APP_BUILD_DIR)
 	cp "$$(lake query $(APP_LIB_TARGET))" $(APP_STATIC_LIB)
 
 $(APP_RUNTIME_BRIDGE_OBJ): $(APP_RUNTIME_BRIDGE_SRC) $(APP_RUNTIME_BRIDGE_HEADER)
 	mkdir -p $(APP_OBJ_DIR)
-	IOS_SDK="$(IOS_SDK)" CCACHE="$(CCACHE)" $(abspath $(ROOT_DIR)/scripts/ios-clang.sh) \
+	xcrun --sdk $(IOS_SDK) clang \
 	  -target $(IOS_TARGET) \
 	  -isysroot $(IOS_SDK_PATH) \
 	  $(APP_MIN_VERSION_FLAG) \
@@ -188,7 +185,7 @@ $(APP_RUNTIME_BRIDGE_OBJ): $(APP_RUNTIME_BRIDGE_SRC) $(APP_RUNTIME_BRIDGE_HEADER
 
 $(APP_BRIDGE_OBJ): $(APP_BRIDGE_SRC) $(APP_BRIDGE_HEADER) $(APP_RUNTIME_BRIDGE_HEADER)
 	mkdir -p $(APP_OBJ_DIR)
-	IOS_SDK="$(IOS_SDK)" CCACHE="$(CCACHE)" $(abspath $(ROOT_DIR)/scripts/ios-clang.sh) \
+	xcrun --sdk $(IOS_SDK) clang \
 	  -target $(IOS_TARGET) \
 	  -isysroot $(IOS_SDK_PATH) \
 	  $(APP_MIN_VERSION_FLAG) \
@@ -202,7 +199,7 @@ $(APP_BRIDGE_OBJ): $(APP_BRIDGE_SRC) $(APP_BRIDGE_HEADER) $(APP_RUNTIME_BRIDGE_H
 
 $(APP_MAIN_OBJ): $(APP_MAIN_SRC) $(SDL_XCFRAMEWORK_INFO) $(APP_RUNTIME_BRIDGE_HEADER)
 	mkdir -p $(APP_OBJ_DIR)
-	IOS_SDK="$(IOS_SDK)" CCACHE="$(CCACHE)" $(abspath $(ROOT_DIR)/scripts/ios-clang.sh) \
+	xcrun --sdk $(IOS_SDK) clang \
 	  -target $(IOS_TARGET) \
 	  -isysroot $(IOS_SDK_PATH) \
 	  $(APP_MIN_VERSION_FLAG) \
@@ -233,7 +230,7 @@ $(APP_ASSET_STAMP): $(shell find $(APP_ASSETS_DIR) -type f)
 
 $(APP_BIN): app-lib $(APP_STATIC_LIB) $(SDL_BINDINGS_STATIC_LIB) $(APP_DEP_STATIC_LIBS) $(STDLIB_STD_LIB) $(STDLIB_LEAN_LIB) $(SDL_XCFRAMEWORK_INFO) $(SDL_TTF_XCFRAMEWORK_INFO) $(RESVG_LIB) $(APP_RUNTIME_BRIDGE_OBJ) $(APP_BRIDGE_OBJ) $(APP_MAIN_OBJ)
 	mkdir -p $(APP_DIR)
-	SDKROOT="$(IOS_SDK_PATH)" IOS_SDK="$(IOS_SDK)" CCACHE="$(CCACHE)" $(abspath $(ROOT_DIR)/scripts/ios-clangxx.sh) \
+	SDKROOT="$(IOS_SDK_PATH)" xcrun --sdk $(IOS_SDK) clang++ \
 	  -target $(IOS_TARGET) \
 	  -isysroot $(IOS_SDK_PATH) \
 	  $(APP_MIN_VERSION_FLAG) \

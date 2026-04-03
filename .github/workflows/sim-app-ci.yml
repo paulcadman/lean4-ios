@@ -8,13 +8,6 @@ on:
 jobs:
   sim-app-builds:
     runs-on: macos-latest
-    env:
-      CCACHE_DIR: ${{ github.workspace }}/.ccache
-      CCACHE_BASEDIR: ${{ github.workspace }}
-      CCACHE_COMPILERCHECK: content
-      CCACHE_NOHASHDIR: "true"
-      CCACHE_MAXSIZE: 2G
-      CCACHE: ccache
 
     steps:
       - uses: actions/checkout@v5
@@ -37,15 +30,7 @@ jobs:
 
       - name: Install Homebrew dependencies
         run: |
-          brew install cmake ccache
-
-      - name: Cache ccache
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.CCACHE_DIR }}
-          key: ${{ runner.os }}-${{ runner.arch }}-${{ steps.cache-keys.outputs.xcode_version }}-ccache-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-${{ runner.arch }}-${{ steps.cache-keys.outputs.xcode_version }}-ccache-
+          brew install cmake
 
       - name: Cache Lean host oleans
         uses: actions/cache@v4
@@ -68,7 +53,3 @@ jobs:
 
       - name: Build example-lean-ios-runner sim app
         run: make -C example-lean-ios-runner sim-app
-
-      - name: Show ccache stats
-        if: always()
-        run: ccache --show-stats

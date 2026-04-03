@@ -2,7 +2,6 @@ ROOT_DIR := ..
 
 LEAN_SRC_DIR := $(ROOT_DIR)/lean4
 IOS_DEPLOYMENT_TARGET ?= 16.0
-CCACHE ?=
 IOS_TARGET_TAG := $(subst -,_,$(subst .,_,$(IOS_TARGET)))
 APP_BUNDLE_ID ?= dev.paulcadman.LeanIOSRunner
 APP_NAME := LeanIOSRunner
@@ -58,7 +57,6 @@ app-lib: runtime
 	IOS_DEPLOYMENT_TARGET="$(IOS_DEPLOYMENT_TARGET)" \
 	LEAN_RUNTIME_INCLUDE="$(abspath $(RUNTIME_BUILD_DIR))/include" \
 	LEAN_STAGE0_INCLUDE="$(abspath $(LEAN_SRC_DIR))/stage0/src/include" \
-	CCACHE="$(CCACHE)" \
 	  LEAN_SRC_INCLUDE="$(abspath $(LEAN_SRC_DIR))/src/include" \
 	  lake build $(APP_LIB_TARGET)
 	mkdir -p $(APP_BUILD_DIR)
@@ -66,7 +64,7 @@ app-lib: runtime
 
 $(APP_BRIDGE_OBJ): $(APP_BRIDGE_SRC) $(APP_BRIDGE_HEADER)
 	mkdir -p $(APP_OBJ_DIR)
-	IOS_SDK="$(IOS_SDK)" CCACHE="$(CCACHE)" $(abspath $(ROOT_DIR)/scripts/ios-clangxx.sh) \
+	xcrun --sdk $(IOS_SDK) clang++ \
 	  -target $(IOS_TARGET) \
 	  -isysroot $(IOS_SDK_PATH) \
 	  $(APP_MIN_VERSION_FLAG) \

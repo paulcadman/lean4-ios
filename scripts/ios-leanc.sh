@@ -20,8 +20,4 @@ CLANG_ARGS=(
   "$@"
 )
 
-if [[ -n "${CCACHE:-}" ]]; then
-  exec "$CCACHE" "$CLANG_PATH" "${CLANG_ARGS[@]}"
-else
-  exec "$CLANG_PATH" "${CLANG_ARGS[@]}"
-fi
+exec "$CLANG_PATH" "${CLANG_ARGS[@]}"

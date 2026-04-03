@@ -15,12 +15,6 @@ jobs:
           submodules: recursive
           fetch-depth: 1
 
-      - name: Compute cache keys
-        id: cache-keys
-        run: |
-          echo "lean4_sha=$(git -C lean4 rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-          echo "xcode_version=$(xcodebuild -version | tr '\n' ' ' | sed 's/  */ /g; s/ /-/g')" >> "$GITHUB_OUTPUT"
-
       - name: install elan
         run: |
             set -o pipefail
@@ -30,13 +24,7 @@ jobs:
 
       - name: Install Homebrew dependencies
         run: |
-          brew install cmake
-
-      - name: Cache Lean host oleans
-        uses: actions/cache@v4
-        with:
-          path: build/lean4-host-nogmp/stage1/lib/lean
-          key: ${{ runner.os }}-${{ runner.arch }}-${{ steps.cache-keys.outputs.xcode_version }}-lean-host-oleans-${{ steps.cache-keys.outputs.lean4_sha }}-${{ hashFiles('lean-toolchain', 'Makefile', 'example-elab-app/lakefile.toml', 'example-elab-app/lake-manifest.json') }}
+          brew install cmake zstd
 
       - name: Install Rust iOS targets
         run: |

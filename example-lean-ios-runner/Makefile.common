@@ -7,19 +7,26 @@ APP_BUNDLE_ID ?= dev.paulcadman.LeanIOSRunner
 APP_NAME := LeanIOSRunner
 
 BUILD_DIR := $(ROOT_DIR)/build
-HOST_LEAN_BUILD_DIR := $(BUILD_DIR)/lean4-host-nogmp
-HOST_LEAN_STAGE1_BUILD_DIR := $(HOST_LEAN_BUILD_DIR)/stage1
 RUNTIME_BUILD_DIR := $(BUILD_DIR)/lean4-$(IOS_TARGET_TAG)-runtime
 RUNTIME_LIB := $(RUNTIME_BUILD_DIR)/lib/lean/libleanrt.a
 RUNTIME_CPP_LIB := $(RUNTIME_BUILD_DIR)/lib/lean/libleancpp.a
 RUNTIME_SHELL_LIB := $(RUNTIME_BUILD_DIR)/lib/temp/libleanshell.a
 RUNTIME_INIT_LIB := $(RUNTIME_BUILD_DIR)/lib/temp/libleaninitialize.a
-HOST_OLEAN_DIR := $(HOST_LEAN_STAGE1_BUILD_DIR)/lib/lean
 IOS_BUILD_DIR := $(BUILD_DIR)/ios-lean-$(IOS_TARGET_TAG)
 STDLIB_INIT_LIB := $(IOS_BUILD_DIR)/lib/libInit.a
 STDLIB_STD_LIB := $(IOS_BUILD_DIR)/lib/libStd.a
 STDLIB_LEAN_LIB := $(IOS_BUILD_DIR)/lib/libLean.a
 IOS_SDK_PATH := $(shell xcrun --sdk $(IOS_SDK) --show-sdk-path)
+LEAN4_RELEASE_REPO ?= paulcadman/lean4
+LEAN4_IOS_ARTIFACT_TAG ?= ios-artifacts-v4.29.0
+LEAN4_OLEANS_REV ?= $(shell git -C $(LEAN_SRC_DIR) rev-parse --short=12 HEAD)
+HOST_OLEAN_ARCHIVE_NAME := lean4-host-oleans-macos-$(LEAN4_OLEANS_REV).tar.zst
+HOST_OLEAN_URL := https://github.com/$(LEAN4_RELEASE_REPO)/releases/download/$(LEAN4_IOS_ARTIFACT_TAG)/$(HOST_OLEAN_ARCHIVE_NAME)
+HOST_OLEAN_DOWNLOAD_DIR := $(BUILD_DIR)/downloads
+HOST_OLEAN_ARCHIVE := $(HOST_OLEAN_DOWNLOAD_DIR)/$(HOST_OLEAN_ARCHIVE_NAME)
+HOST_OLEAN_CACHE_DIR := $(BUILD_DIR)/host-oleans/$(LEAN4_IOS_ARTIFACT_TAG)-$(LEAN4_OLEANS_REV)
+HOST_OLEAN_EXTRACT_STAMP := $(HOST_OLEAN_CACHE_DIR)/.extract-stamp
+HOST_OLEAN_DIR := $(HOST_OLEAN_CACHE_DIR)/lean4-host-oleans-macos/lib/lean
 
 APP_LEAN_DIR := lean
 APP_NATIVE_DIR := native
@@ -41,7 +48,6 @@ APP_BRIDGE_HEADER := $(APP_NATIVE_DIR)/LeanIOSBridge.h
 APP_BRIDGE_OBJ := $(APP_OBJ_DIR)/LeanIOSBridge.o
 APP_MAIN_SRC := $(APP_NATIVE_DIR)/App/main.swift
 APP_INFO_PLIST_SRC := $(APP_NATIVE_DIR)/App/Info.plist
-ROOT_OLEANS_TARGET := host-oleans
 
 .PHONY: runtime app-lib app clean
 
@@ -100,8 +106,18 @@ $(APP_BIN): app-lib $(APP_BRIDGE_OBJ) $(APP_MAIN_SRC)
 	  -Xlinker -lc++ \
 	  -o $(APP_BIN)
 
-$(APP_LEAN_LIB_STAMP):
-	$(MAKE) -C $(ROOT_DIR) IOS_SDK="$(IOS_SDK)" IOS_TARGET="$(IOS_TARGET)" IOS_DEPLOYMENT_TARGET="$(IOS_DEPLOYMENT_TARGET)" $(ROOT_OLEANS_TARGET)
+$(HOST_OLEAN_ARCHIVE):
+	mkdir -p $(HOST_OLEAN_DOWNLOAD_DIR)
+	curl -fL --retry 3 --output $(HOST_OLEAN_ARCHIVE) $(HOST_OLEAN_URL)
+
+$(HOST_OLEAN_EXTRACT_STAMP): $(HOST_OLEAN_ARCHIVE)
+	rm -rf $(HOST_OLEAN_CACHE_DIR)
+	mkdir -p $(HOST_OLEAN_CACHE_DIR)
+	zstd -d -c $(HOST_OLEAN_ARCHIVE) | tar -xf - -C $(HOST_OLEAN_CACHE_DIR)
+	test -f $(HOST_OLEAN_DIR)/Lean/Elab/Frontend.olean
+	touch $(HOST_OLEAN_EXTRACT_STAMP)
+
+$(APP_LEAN_LIB_STAMP): $(HOST_OLEAN_EXTRACT_STAMP)
 	mkdir -p $(APP_LEAN_LIB_DIR)
 	rsync -a --delete $(HOST_OLEAN_DIR)/ $(APP_LEAN_LIB_DIR)/
 	touch $(APP_LEAN_LIB_STAMP)

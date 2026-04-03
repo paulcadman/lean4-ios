@@ -1,12 +1,12 @@
-name = "example_elab_app"
+name = "lean_ios_runner"
 version = "0.1.0"
-defaultTargets = ["ExampleElabApp"]
+defaultTargets = ["LeanIOSRunner"]
 
 [leanOptions]
 autoImplicit = false
 
 [[lean_lib]]
-name = "ExampleElabApp"
+name = "LeanIOSRunner"
 srcDir = "lean"
-roots = ["Example"]
+roots = ["Runner"]
 defaultFacets = ["static"]

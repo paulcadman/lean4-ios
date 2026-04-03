@@ -10,7 +10,7 @@
 #include "LeanIOSBridge.h"
 
 extern "C" {
-lean_object *initialize_example__elab__app_Example(uint8_t builtin);
+lean_object *initialize_lean__ios__runner_Runner(uint8_t builtin);
 void lean_initialize();
 void lean_init_task_manager();
 void lean_enable_initializer_execution();
@@ -39,7 +39,7 @@ static bool ensure_lean_initialized() {
   lean::initialize_thread();
 
   if (!module_initialized) {
-    lean_object *init = initialize_example__elab__app_Example(1);
+    lean_object *init = initialize_lean__ios__runner_Runner(1);
     if (lean_io_result_is_error(init)) {
       lean_dec_ref(init);
       return false;

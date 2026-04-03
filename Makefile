@@ -31,26 +31,30 @@ ifneq ($(strip $(CCACHE)),)
 CMAKE_CCACHE_ARGS := -DCMAKE_C_COMPILER_LAUNCHER=$(CCACHE) -DCMAKE_CXX_COMPILER_LAUNCHER=$(CCACHE)
 endif
 
-.PHONY: all runtime ios-runtime stdlib-init stdlib-std stdlib-lean host-lean-stdlib host-lean-stdlib-fresh host-oleans clean
+.PHONY: all runtime stdlib-init stdlib-std stdlib-lean host-lean-stdlib host-lean-stdlib-fresh host-oleans clean
 
 all: runtime stdlib-init stdlib-std stdlib-lean
 
-runtime: ios-runtime
-ios-runtime: $(RUNTIME_CONFIG_STAMP)
+runtime: $(RUNTIME_CONFIG_STAMP)
 	cmake --build $(LEAN_RUNTIME_BUILD_DIR) --target leanrt -j4
 
 stdlib-init: $(STDLIB_INIT_LIB_LEANMAKE)
+
 stdlib-std: $(STDLIB_STD_LIB_LEANMAKE)
+
 stdlib-lean: $(STDLIB_LEAN_LIB_LEANMAKE)
+
 host-oleans:
 	if [ -f $(SIM_STDLIB_OLEAN_DIR)/Lean/Elab/Frontend.olean ]; then \
 		exit 0; \
 	fi
 	$(MAKE) host-lean-stdlib
 	test -f $(SIM_STDLIB_OLEAN_DIR)/Lean/Elab/Frontend.olean
+
 host-lean-stdlib: $(HOST_CONFIG_STAMP)
 	cmake --build $(HOST_LEAN_BUILD_DIR) --target stage1-configure -j4
 	cmake --build $(HOST_LEAN_STAGE1_BUILD_DIR) --target make_stdlib -j4
+
 host-lean-stdlib-fresh:
 	rm -rf $(HOST_LEAN_BUILD_DIR)/stage0 $(HOST_LEAN_BUILD_DIR)/stage1
 	$(MAKE) host-lean-stdlib
@@ -74,7 +78,7 @@ $(HOST_CONFIG_STAMP): $(LEAN_SRC_DIR)/CMakeLists.txt $(LEAN_SRC_DIR)/src/CMakeLi
 		-DUSE_GMP=OFF \
 		-DUSE_LIBUV=OFF
 
-$(STDLIB_INIT_LIB_LEANMAKE): ios-runtime $(IOS_LEANC)
+$(STDLIB_INIT_LIB_LEANMAKE): runtime $(IOS_LEANC)
 	mkdir -p $(LIB_DIR)
 	cd $(STAGE0_STDLIB_DIR) && \
 	IOS_SDK="$(IOS_SDK)" \

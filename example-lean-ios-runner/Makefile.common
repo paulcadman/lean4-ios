@@ -1,11 +1,9 @@
 ROOT_DIR := ..
 
 LEAN_SRC_DIR := $(ROOT_DIR)/lean4
-LEAN_PREFIX := $(shell lean --print-prefix)
 IOS_DEPLOYMENT_TARGET ?= 16.0
 CCACHE ?=
 IOS_TARGET_TAG := $(subst -,_,$(subst .,_,$(IOS_TARGET)))
-APP_BUNDLE_ID ?= dev.paulcadman.LeanIOSRunner
 APP_NAME := LeanIOSRunner
 
 BUILD_DIR := $(ROOT_DIR)/build
@@ -38,8 +36,6 @@ APP_LEAN_LIB_STAMP := $(APP_DIR)/.lean-lib-stamp
 APP_LIB_TARGET := LeanIOSRunner:static
 APP_LAKE_BUILD_DIR := .lake/build
 APP_STATIC_LIB := $(APP_BUILD_DIR)/libLeanIOSRunner.a
-APP_LEAN_SOURCES := $(shell find $(APP_LEAN_DIR) -name '*.lean' | sort)
-APP_LAKE_SOURCES := lakefile.toml lake-manifest.json $(ROOT_DIR)/lean-toolchain
 APP_BRIDGE_SRC := $(APP_NATIVE_DIR)/LeanIOSBridge.cpp
 APP_BRIDGE_HEADER := $(APP_NATIVE_DIR)/LeanIOSBridge.h
 APP_BRIDGE_OBJ := $(APP_OBJ_DIR)/LeanIOSBridge.o
@@ -47,12 +43,12 @@ APP_MAIN_SRC := $(APP_NATIVE_DIR)/App/main.swift
 APP_INFO_PLIST_SRC := $(APP_NATIVE_DIR)/App/Info.plist
 ROOT_OLEANS_TARGET := host-oleans
 
-.PHONY: runtime app clean
+.PHONY: runtime app-lib app clean
 
 runtime:
 	$(MAKE) -C $(ROOT_DIR) IOS_SDK="$(IOS_SDK)" IOS_TARGET="$(IOS_TARGET)" IOS_DEPLOYMENT_TARGET="$(IOS_DEPLOYMENT_TARGET)" runtime stdlib-init stdlib-std stdlib-lean
 
-$(APP_STATIC_LIB): $(RUNTIME_LIB) $(STDLIB_INIT_LIB) $(STDLIB_STD_LIB) $(STDLIB_LEAN_LIB) $(APP_LEAN_SOURCES) $(APP_LAKE_SOURCES)
+app-lib: runtime
 	cmake --build $(RUNTIME_BUILD_DIR) --target leancpp leanshell leaninitialize -j4
 	LEAN_CC="$(abspath $(ROOT_DIR)/scripts/ios-leanc.sh)" \
 	LEAN_AR="$(abspath $(ROOT_DIR)/scripts/ios-ar.sh)" \
@@ -81,7 +77,7 @@ $(APP_BRIDGE_OBJ): $(APP_BRIDGE_SRC) $(APP_BRIDGE_HEADER)
 	  -c $(APP_BRIDGE_SRC) \
 	  -o $(APP_BRIDGE_OBJ)
 
-$(APP_BIN): $(APP_STATIC_LIB) $(APP_BRIDGE_OBJ) $(APP_MAIN_SRC)
+$(APP_BIN): app-lib $(APP_BRIDGE_OBJ) $(APP_MAIN_SRC)
 	mkdir -p $(APP_DIR) $(APP_MODULE_CACHE_DIR)
 	xcrun --sdk $(IOS_SDK) swiftc \
 	  -parse-as-library \

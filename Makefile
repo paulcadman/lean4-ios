@@ -42,7 +42,11 @@ ios-runtime: $(RUNTIME_CONFIG_STAMP)
 stdlib-init: $(STDLIB_INIT_LIB_LEANMAKE)
 stdlib-std: $(STDLIB_STD_LIB_LEANMAKE)
 stdlib-lean: $(STDLIB_LEAN_LIB_LEANMAKE)
-host-oleans: host-lean-stdlib
+host-oleans:
+	if [ -f $(SIM_STDLIB_OLEAN_DIR)/Lean/Elab/Frontend.olean ]; then \
+		exit 0; \
+	fi
+	$(MAKE) host-lean-stdlib
 	test -f $(SIM_STDLIB_OLEAN_DIR)/Lean/Elab/Frontend.olean
 host-lean-stdlib: $(HOST_CONFIG_STAMP)
 	cmake --build $(HOST_LEAN_BUILD_DIR) --target stage1-configure -j4

@@ -54,6 +54,8 @@ private struct ContentView: View {
 
           TextEditor(text: $source)
             .font(.system(size: 15, weight: .regular, design: .monospaced))
+            .disableAutocorrection(true)
+            .textInputAutocapitalization(.never)
             .scrollContentBackground(.hidden)
             .padding(14)
             .frame(minHeight: 220, maxHeight: .infinity)

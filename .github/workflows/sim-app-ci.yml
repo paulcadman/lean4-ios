@@ -66,8 +66,8 @@ jobs:
       - name: Build example-bus-times sim app
         run: make -C example-bus-times sim-app
 
-      - name: Build example-elab-app sim app
-        run: make -C example-elab-app sim-app
+      - name: Build example-lean-ios-runner sim app
+        run: make -C example-lean-ios-runner sim-app
 
       - name: Show ccache stats
         if: always()

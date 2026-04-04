@@ -9,15 +9,12 @@ set -euo pipefail
 : "${LEAN_SRC_INCLUDE:?}"
 
 SDK_PATH="$(xcrun --sdk "$IOS_SDK" --show-sdk-path)"
-CLANG_PATH="$(xcrun --sdk "$IOS_SDK" -f clang)"
-CLANG_ARGS=(
-  -target "$IOS_TARGET"
-  -isysroot "$SDK_PATH"
-  -mios-version-min="$IOS_DEPLOYMENT_TARGET"
-  -I"$LEAN_RUNTIME_INCLUDE"
-  -I"$LEAN_STAGE0_INCLUDE"
-  -I"$LEAN_SRC_INCLUDE"
-  "$@"
-)
 
-exec "$CLANG_PATH" "${CLANG_ARGS[@]}"
+exec xcrun --sdk "$IOS_SDK" clang \
+  -target "$IOS_TARGET" \
+  -isysroot "$SDK_PATH" \
+  -mios-version-min="$IOS_DEPLOYMENT_TARGET" \
+  -I"$LEAN_RUNTIME_INCLUDE" \
+  -I"$LEAN_STAGE0_INCLUDE" \
+  -I"$LEAN_SRC_INCLUDE" \
+  "$@"

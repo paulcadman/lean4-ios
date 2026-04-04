@@ -20,22 +20,18 @@ STDLIB_LEAN_LIB_LEANMAKE := $(LIB_DIR)/libLean.a
 
 AR := xcrun --sdk $(IOS_SDK) ar
 IOS_LEANC := $(abspath scripts/ios-leanc.sh)
-RUNTIME_CONFIG_STAMP := $(LEAN_RUNTIME_BUILD_DIR)/CMakeCache.txt
 
 .PHONY: all runtime stdlib-init stdlib-std stdlib-lean clean
 
 all: runtime stdlib-init stdlib-std stdlib-lean
 
-runtime: $(RUNTIME_CONFIG_STAMP)
-	cmake --build $(LEAN_RUNTIME_BUILD_DIR) --target leanrt -j4
+runtime: $(RUNTIME_LIB)
 
 stdlib-init: $(STDLIB_INIT_LIB_LEANMAKE)
-
 stdlib-std: $(STDLIB_STD_LIB_LEANMAKE)
-
 stdlib-lean: $(STDLIB_LEAN_LIB_LEANMAKE)
 
-$(RUNTIME_CONFIG_STAMP): $(LEAN_SRC_DIR)/src/CMakeLists.txt $(LEAN_SRC_DIR)/src/runtime/CMakeLists.txt $(LEAN_SRC_DIR)/src/config.h.in $(LEAN_SRC_DIR)/CMakeLists.txt Makefile
+$(RUNTIME_LIB): $(LEAN_SRC_DIR)/src/CMakeLists.txt $(LEAN_SRC_DIR)/src/runtime/CMakeLists.txt $(LEAN_SRC_DIR)/src/config.h.in $(LEAN_SRC_DIR)/CMakeLists.txt Makefile
 	cmake -S $(LEAN_SRC_DIR)/src -B $(LEAN_RUNTIME_BUILD_DIR) -G "Unix Makefiles" \
 		-DSTAGE=0 \
 		-DCMAKE_SYSTEM_NAME=iOS \
@@ -46,8 +42,9 @@ $(RUNTIME_CONFIG_STAMP): $(LEAN_SRC_DIR)/src/CMakeLists.txt $(LEAN_SRC_DIR)/src/
 		-DUSE_MIMALLOC=OFF \
 		-DUSE_LIBUV=OFF \
 		-DUSE_GMP=OFF
+	cmake --build $(LEAN_RUNTIME_BUILD_DIR) --target leanrt -j4
 
-$(STDLIB_INIT_LIB_LEANMAKE): runtime $(IOS_LEANC)
+$(STDLIB_INIT_LIB_LEANMAKE): $(RUNTIME_LIB) $(IOS_LEANC)
 	mkdir -p $(LIB_DIR)
 	cd $(STAGE0_STDLIB_DIR) && \
 	IOS_SDK="$(IOS_SDK)" \
